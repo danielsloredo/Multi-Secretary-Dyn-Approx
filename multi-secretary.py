@@ -47,7 +47,7 @@ def dynamic_solution(T, capacity):
     result = msecretary(val, sol_index, prob_choice, rewards, T, capacity)
     sol = vectors[sol_index]
 
-    return result, val, sol 
+    return result, val, sol, sol_index
 
 def approx_dynamic_solution(T, capacity):
 
@@ -67,7 +67,28 @@ def approx_dynamic_solution(T, capacity):
     result = val[T][capacity]
     sol = vectors[sol_index]
 
-    return result, val, sol
+    return result, val, sol, sol_index
+
+def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x): 
+    if t == 0 or x == 0:
+        return 0 
+    if val[t][x] != 0: 
+        return val[t][x]
+    
+    q_val = (np.sum(prob_choice * (rewards + evaluate_msecretary(val, sol_index, prob_choice, rewards, t-1, x-1)), axis = 1) 
+             + (1-prob_choice.sum(axis = 1))*evaluate_msecretary(val, sol_index, prob_choice, rewards, t-1, x))
+    
+    val[t][x] = q_val[sol_index[t][x]]
+    
+    return val[t][x]
+
+def evaluate_solution(T, capacity, sol_index):
+    
+    val = np.zeros((T+1, capacity+1))
+    
+    result = evaluate_msecretary(val, sol_index, prob_choice, rewards, T, capacity)
+    
+    return result, val
 
 
 if __name__ == '__main__':
@@ -83,11 +104,14 @@ if __name__ == '__main__':
     vectors = generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
 
-    result_dynamic, val_dynamic, sol_dynamic = dynamic_solution(T, capacity)
-    print(result_dynamic, val_dynamic, sol_dynamic)
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = dynamic_solution(T, capacity)
+    print(result_dynamic, val_dynamic)
 
-    result_approx, val_approx, sol_approx = approx_dynamic_solution(T, capacity)
-    print(result_approx, val_approx, sol_approx)
+    result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity)
+    print(result_approx, val_approx)
+
+    result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx)
+    print(result_eval_approx, val_eval_approx)
 
     #print(deterministic_msecretary(probabilities, rewards, n_types, T, capacity))
     
