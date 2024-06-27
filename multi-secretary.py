@@ -98,7 +98,7 @@ def evaluate_solution(T, capacity, sol_index):
 if __name__ == '__main__':
     np.random.seed(42)
     n_types = 4
-    capacity = 70 #capacity. benchmark = 5
+    capacity = 99 #capacity. benchmark = 5
     T = 100 #Time periods remaining. benchmark = 10
 
     probabilities = uniform.rvs(size = n_types)
@@ -109,35 +109,39 @@ if __name__ == '__main__':
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
 
     result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = dynamic_solution(T, capacity)
-    print(result_dynamic, val_dynamic)
+    #print(result_dynamic, val_dynamic)
 
     result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity)
-    print(result_approx, val_approx)
+    #print(result_approx, val_approx)
 
     result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx)
-    print(result_eval_approx, val_eval_approx)
+    #print(result_eval_approx, val_eval_approx)
 
-    fix_t = 40
-    plt.figure(figsize=(16,10), dpi= 80)
-    plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
-    plt.plot(val_approx[fix_t], color = 'tab:red', label='Value function using bellman approximation')
-    plt.plot(val_eval_approx[fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using solutions from bellman approximation')
+    t_periods = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
 
-    # Decoration
-    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-    plt.yticks(fontsize=12, alpha=.7)
-    plt.title('Value function "$V_t(x)$" for t = '+str(100-fix_t), fontsize=20)
-    plt.grid(axis='both', alpha=.3)
-    plt.xlabel('x (capacity)', fontsize = 14)
-    plt.text(0,-20, '*Multi-secretary problem with 4 types, 100 periods, and max capacity of 70', fontsize = 12)
+    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/'
 
-    # Remove borders
-    plt.gca().spines["top"].set_alpha(0.3)    
-    plt.gca().spines["bottom"].set_alpha(0.3)
-    plt.gca().spines["right"].set_alpha(0.3)    
-    plt.gca().spines["left"].set_alpha(0.3)   
-    
-    plt.legend(loc = "lower right")
-    plt.show()
+    for dix, fix_t in enumerate(t_periods):
+        plt.figure(figsize=(16,10), dpi= 80)
+        plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
+        plt.plot(val_approx[fix_t], color = 'tab:red', label='Value function using bellman approximation')
+        plt.plot(val_eval_approx[fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using solutions from bellman approximation')
 
+        # Decoration
+        plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+        plt.yticks(fontsize=12, alpha=.7)
+        plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for t = '+str(T-fix_t), fontsize=20)
+        plt.grid(axis='both', alpha=.3)
+        plt.xlabel('x (capacity)', fontsize = 14)
+        
+        # Remove borders
+        plt.gca().spines["top"].set_alpha(0.3)    
+        plt.gca().spines["bottom"].set_alpha(0.3)
+        plt.gca().spines["right"].set_alpha(0.3)    
+        plt.gca().spines["left"].set_alpha(0.3)   
+        
+        plt.legend(loc = "lower right")
+        
+        plt.savefig(path+'t_period'+str(T-fix_t)+'.png')
+        plt.clf()
 
