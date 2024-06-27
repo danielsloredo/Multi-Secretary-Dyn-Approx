@@ -44,7 +44,10 @@ def dynamic_solution(T, capacity):
     val = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
 
-    result = msecretary(val, sol_index, prob_choice, rewards, T, capacity)
+    result = np.zeros((capacity+1))
+    for cap in range(1, capacity+1):
+        result[cap] = msecretary(val, sol_index, prob_choice, rewards, T, cap)
+    
     sol = vectors[sol_index]
 
     return result, val, sol, sol_index
@@ -85,10 +88,11 @@ def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x):
 def evaluate_solution(T, capacity, sol_index):
     
     val = np.zeros((T+1, capacity+1))
+    result = np.zeros((capacity+1))
+    for cap in range(1, capacity+1):
+        result[cap] = evaluate_msecretary(val, sol_index, prob_choice, rewards, T, cap)
     
-    result = evaluate_msecretary(val, sol_index, prob_choice, rewards, T, capacity)
-    
-    return result, val
+    return result[capacity], val
 
 
 if __name__ == '__main__':
@@ -113,7 +117,7 @@ if __name__ == '__main__':
     result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx)
     print(result_eval_approx, val_eval_approx)
 
-    fix_t = 30
+    fix_t = 40
     plt.figure(figsize=(16,10), dpi= 80)
     plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value', linestyle = '--')
     plt.plot(val_approx[fix_t], color = 'tab:red', label='Fake Bellman')
