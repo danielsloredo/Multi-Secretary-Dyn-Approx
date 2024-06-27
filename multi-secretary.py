@@ -1,5 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+import cvxpy as cp
 from scipy.stats import uniform
 
 ###############################################################
@@ -22,9 +23,18 @@ def msecretary(prob_choice, rewards, t, B):
         return val[t][B]
     
     val[t][B] = max(np.sum(prob_choice * (rewards + msecretary(prob_choice, rewards, t-1, B-1)), axis = 1)
-                    + (1- prob_choice.sum(axis =1))*msecretary(prob_choice,rewards, t-1, B))
+                    + (1- prob_choice.sum(axis = 1))*msecretary(prob_choice,rewards, t-1, B))
     
     return val[t][B]
+
+def deterministic_msecretary(probabilities, rewards, n_types, t, B):
+    y = cp.Variable(n_types)
+    objective = cp.Maximize(cp.sum(rewards @ y))
+    constraints = [0<=y, y<=B, y<= probabilities*t]
+    prob = cp.Problem(objective, constraints)
+    result = prob.solve()
+
+    return result
 
 if __name__ == '__main__':
     np.random.seed(42)
@@ -33,8 +43,8 @@ if __name__ == '__main__':
     probabilities /= probabilities.sum()
     rewards = uniform.rvs(scale = 10, size = n_types)
 
-    capacity = 10 #capacity. benchmark = 5
-    T = 20 #Time periods. benchmark = 10
+    capacity = 5 #capacity. benchmark = 5
+    T = 10 #Time periods remaining. benchmark = 10
 
     vectors = generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables. 
@@ -43,6 +53,6 @@ if __name__ == '__main__':
 
     print(msecretary(prob_choice, rewards, T, capacity))
 
-
+    print(deterministic_msecretary(probabilities, rewards, n_types, 10, 5))
 
 
