@@ -94,8 +94,8 @@ def evaluate_solution(T, capacity, sol_index):
 if __name__ == '__main__':
     np.random.seed(42)
     n_types = 4
-    capacity = 5 #capacity. benchmark = 5
-    T = 10 #Time periods remaining. benchmark = 10
+    capacity = 70 #capacity. benchmark = 5
+    T = 100 #Time periods remaining. benchmark = 10
 
     probabilities = uniform.rvs(size = n_types)
     probabilities /= probabilities.sum()
@@ -113,7 +113,25 @@ if __name__ == '__main__':
     result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx)
     print(result_eval_approx, val_eval_approx)
 
-    #print(deterministic_msecretary(probabilities, rewards, n_types, T, capacity))
+    fix_t = 30
+    plt.figure(figsize=(16,10), dpi= 80)
+    plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value', linestyle = '--')
+    plt.plot(val_approx[fix_t], color = 'tab:red', label='Fake Bellman')
+    plt.plot(val_eval_approx[fix_t], color = 'tab:blue', linestyle= '-', label = 'Eval solution')
+
+    # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title("Value function for t = "+str(100-fix_t), fontsize=22)
+    plt.grid(axis='both', alpha=.3)
+
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)   
     
+    plt.legend()
+    plt.show()
 
 
