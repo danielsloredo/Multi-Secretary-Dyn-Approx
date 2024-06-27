@@ -119,15 +119,17 @@ if __name__ == '__main__':
 
     fix_t = 40
     plt.figure(figsize=(16,10), dpi= 80)
-    plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value', linestyle = '--')
-    plt.plot(val_approx[fix_t], color = 'tab:red', label='Fake Bellman')
-    plt.plot(val_eval_approx[fix_t], color = 'tab:blue', linestyle= '-', label = 'Eval solution')
+    plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
+    plt.plot(val_approx[fix_t], color = 'tab:red', label='Value function using bellman approximation')
+    plt.plot(val_eval_approx[fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using solutions from bellman approximation')
 
     # Decoration
     plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
     plt.yticks(fontsize=12, alpha=.7)
-    plt.title("Value function for t = "+str(100-fix_t), fontsize=22)
+    plt.title('Value function "$V_t(x)$" for t = '+str(100-fix_t), fontsize=20)
     plt.grid(axis='both', alpha=.3)
+    plt.xlabel('x (capacity)', fontsize = 14)
+    plt.text(0,-20, '*Multi-secretary problem with 4 types, 100 periods, and max capacity of 70', fontsize = 12)
 
     # Remove borders
     plt.gca().spines["top"].set_alpha(0.3)    
@@ -135,7 +137,7 @@ if __name__ == '__main__':
     plt.gca().spines["right"].set_alpha(0.3)    
     plt.gca().spines["left"].set_alpha(0.3)   
     
-    plt.legend()
+    plt.legend(loc = "lower right")
     plt.show()
 
 
