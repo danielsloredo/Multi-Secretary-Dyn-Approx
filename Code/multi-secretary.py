@@ -57,7 +57,6 @@ def msecretary_lookahead(val, sol_index, prob_choice, rewards, t, x, val_determi
     
     return val[t][x]
 
-
 def dynamic_solution(T, capacity):
     
     val = np.zeros((T+1, capacity+1))
@@ -104,25 +103,25 @@ def approx_dynamic_solution(T, capacity, val_deterministic):
 
     return result, val, sol, sol_index
 
-def approx_n_lookahead(T, capacity, window_size):
+def approx_n_lookahead(T, capacity, val_deterministic, window):
     
-    val = np.zeros((T+1, capacity+1))
+    value = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
 
-    for t in range(1, T+1):
-        for x in range(1, capacity+1):
-            if t == 0 or x == 0:
-                val[t][x] = 0 
+    result = np.zeros((T+1, capacity+1))
+
+    for period in range(1, T+1): 
+        val_temp = np.zeros((T+1, capacity))
+        sol_index_temp = np.zeros((T+1, capacity+1), dtype=int)
+
+        for cap in range(1, capacity+1):
+            result[period][cap] = msecretary_lookahead(val_temp, sol_index_temp, prob_choice, rewards, period, cap, val_deterministic, window)
+            value[period][cap] = val_temp[period][cap]
+            sol_index[period][cap] = sol_index_temp[period][cap]
     
-            q_val = (np.sum(prob_choice * (rewards + val_deterministic[t-1][x-1]), axis = 1) 
-                     + (1-prob_choice.sum(axis = 1))*val_deterministic[t-1][x])
-            sol_index[t][x] = np.argmax(q_val)
-            val[t][x] = q_val[sol_index[t][x]]
+        sol = vectors[sol_index]
 
-    result = val[T][capacity]
-    sol = vectors[sol_index]
-
-    return
+    return result, value, sol, sol_index
 
 def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x): 
     if t == 0 or x == 0:
