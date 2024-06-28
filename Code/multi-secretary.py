@@ -111,7 +111,7 @@ def approx_n_lookahead(T, capacity, val_deterministic, window):
     result = np.zeros((T+1, capacity+1))
 
     for period in range(1, T+1): 
-        val_temp = np.zeros((T+1, capacity))
+        val_temp = np.zeros((T+1, capacity+1))
         sol_index_temp = np.zeros((T+1, capacity+1), dtype=int)
 
         for cap in range(1, capacity+1):
@@ -200,3 +200,37 @@ if __name__ == '__main__':
         plt.savefig(path+'t_period'+str(T-fix_t)+'.png')
         plt.clf()
 
+    
+    result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = approx_n_lookahead(T, capacity, val_deterministic, 5)
+    #print(result_approx, val_approx) 
+
+    result_eval_lookahead, val_eval_lookahead = evaluate_solution(T, capacity, sol_index_lookahead)
+    #print(result_eval_approx, val_eval_approx)
+
+    t_periods = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
+
+    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/'
+
+    for dix, fix_t in enumerate(t_periods):
+        plt.figure(figsize=(16,10), dpi= 80)
+        plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
+        plt.plot(val_lookahead[fix_t], color = 'tab:red', label='Value function using bellman approximation')
+        plt.plot(val_eval_lookahead[fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using solutions from bellman approximation')
+
+        # Decoration
+        plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+        plt.yticks(fontsize=12, alpha=.7)
+        plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for t = '+str(T-fix_t), fontsize=20)
+        plt.grid(axis='both', alpha=.3)
+        plt.xlabel('x (capacity)', fontsize = 14)
+        
+        # Remove borders
+        plt.gca().spines["top"].set_alpha(0.3)    
+        plt.gca().spines["bottom"].set_alpha(0.3)
+        plt.gca().spines["right"].set_alpha(0.3)    
+        plt.gca().spines["left"].set_alpha(0.3)   
+        
+        plt.legend(loc = "lower right")
+        
+        plt.savefig(path+'t_period'+str(T-fix_t)+'lookahead.png')
+        plt.clf()
