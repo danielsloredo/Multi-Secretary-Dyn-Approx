@@ -39,6 +39,25 @@ def msecretary(val, sol_index, prob_choice, rewards, t, x):
     
     return val[t][x]
 
+def msecretary_lookahead(val, sol_index, prob_choice, rewards, t, x, val_deterministic, window, depth = 0): 
+
+    if t == 0 or x == 0:
+        return 0 
+    if val[t][x] != 0: 
+        return val[t][x]
+    
+    if depth == (window-1): 
+        return val_deterministic[t][x]
+    
+    q_val = (np.sum(prob_choice * (rewards + msecretary_lookahead(val, sol_index, prob_choice, rewards, t-1, x-1, val_deterministic, window, depth+1)), axis = 1) 
+             + (1-prob_choice.sum(axis = 1))*msecretary_lookahead(val, sol_index, prob_choice, rewards, t-1, x, val_deterministic, window, depth+1))
+    
+    sol_index[t][x] = np.argmax(q_val)
+    val[t][x] = q_val[sol_index[t][x]]
+    
+    return val[t][x]
+
+
 def dynamic_solution(T, capacity):
     
     val = np.zeros((T+1, capacity+1))
@@ -52,8 +71,41 @@ def dynamic_solution(T, capacity):
 
     return result, val, sol, sol_index
 
-def approx_dynamic_solution(T, capacity):
 
+def deterministic_msecretary_array(T, capacity, approx_periods):
+    
+    val_deterministic = np.zeros((T+1, capacity+1))
+
+    deterministic_period = np.array(approx_periods)
+
+    for t in deterministic_period:
+        for x in range(1, capacity+1):
+            val_deterministic[t][x] = deterministic_msecretary(probabilities, rewards, n_types, t, x)
+
+    return val_deterministic
+
+def approx_dynamic_solution(T, capacity, val_deterministic):
+
+    val = np.zeros((T+1, capacity+1))
+    sol_index = np.zeros((T+1, capacity+1), dtype=int)
+    
+    for t in range(1, T+1):
+        for x in range(1, capacity+1):
+            if t == 0 or x == 0:
+                val[t][x] = 0 
+    
+            q_val = (np.sum(prob_choice * (rewards + val_deterministic[t-1][x-1]), axis = 1) 
+                     + (1-prob_choice.sum(axis = 1))*val_deterministic[t-1][x])
+            sol_index[t][x] = np.argmax(q_val)
+            val[t][x] = q_val[sol_index[t][x]]
+
+    result = val[T][capacity]
+    sol = vectors[sol_index]
+
+    return result, val, sol, sol_index
+
+def approx_n_lookahead(T, capacity, window_size):
+    
     val = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
 
@@ -62,15 +114,15 @@ def approx_dynamic_solution(T, capacity):
             if t == 0 or x == 0:
                 val[t][x] = 0 
     
-            q_val = (np.sum(prob_choice * (rewards + deterministic_msecretary(probabilities, rewards, n_types, t-1, x-1)), axis = 1) 
-                     + (1-prob_choice.sum(axis = 1))*deterministic_msecretary(probabilities, rewards, n_types, t-1, x))
+            q_val = (np.sum(prob_choice * (rewards + val_deterministic[t-1][x-1]), axis = 1) 
+                     + (1-prob_choice.sum(axis = 1))*val_deterministic[t-1][x])
             sol_index[t][x] = np.argmax(q_val)
             val[t][x] = q_val[sol_index[t][x]]
 
     result = val[T][capacity]
     sol = vectors[sol_index]
 
-    return result, val, sol, sol_index
+    return
 
 def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x): 
     if t == 0 or x == 0:
@@ -97,6 +149,7 @@ def evaluate_solution(T, capacity, sol_index):
 
 if __name__ == '__main__':
     np.random.seed(42)
+    ######## This are global variables
     n_types = 4
     capacity = 99 #capacity. benchmark = 5
     T = 100 #Time periods remaining. benchmark = 10
@@ -107,11 +160,14 @@ if __name__ == '__main__':
 
     vectors = generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
+    ########
 
     result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = dynamic_solution(T, capacity)
     #print(result_dynamic, val_dynamic)
 
-    result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity)
+    val_deterministic = deterministic_msecretary_array(T, capacity, np.arange(1, T+1))
+
+    result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity, val_deterministic)
     #print(result_approx, val_approx)
 
     result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx)
