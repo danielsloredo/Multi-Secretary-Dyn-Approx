@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     probabilities = uniform.rvs(size = n_types)
     probabilities /= probabilities.sum()
-    rewards = uniform.rvs(scale = 10, size = n_types)
+    rewards = np.array([4, 2, .5, 9]) #uniform.rvs(scale = 10, size = n_types)
 
     vectors = generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
