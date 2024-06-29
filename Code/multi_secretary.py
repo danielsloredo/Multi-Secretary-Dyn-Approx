@@ -57,7 +57,7 @@ def msecretary_lookahead(val, sol_index, prob_choice, rewards, t, x, val_determi
     
     return val[t][x]
 
-def dynamic_solution(T, capacity):
+def dynamic_solution(T, capacity, prob_choice, rewards, vectors):
     
     val = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
@@ -71,7 +71,7 @@ def dynamic_solution(T, capacity):
     return result, val, sol, sol_index
 
 
-def deterministic_msecretary_array(T, capacity, approx_periods):
+def deterministic_msecretary_array(T, capacity, approx_periods, probabilities, rewards, n_types):
     
     val_deterministic = np.zeros((T+1, capacity+1))
 
@@ -83,7 +83,7 @@ def deterministic_msecretary_array(T, capacity, approx_periods):
 
     return val_deterministic
 
-def approx_dynamic_solution(T, capacity, val_deterministic):
+def approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors):
 
     val = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
@@ -103,7 +103,7 @@ def approx_dynamic_solution(T, capacity, val_deterministic):
 
     return result, val, sol, sol_index
 
-def approx_n_lookahead(T, capacity, val_deterministic, window):
+def approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors):
     
     value = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
@@ -136,7 +136,7 @@ def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x):
     
     return val[t][x]
 
-def evaluate_solution(T, capacity, sol_index):
+def evaluate_solution(T, capacity, sol_index, prob_choice, rewards):
     
     val = np.zeros((T+1, capacity+1))
     result = np.zeros((capacity+1))
@@ -156,25 +156,17 @@ if __name__ == '__main__':
     probabilities = uniform.rvs(size = n_types)
     probabilities /= probabilities.sum()
     rewards = np.array([4, 2, .5, 9]) #uniform.rvs(scale = 10, size = n_types)
-
     vectors = generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
     ########
 
-    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = dynamic_solution(T, capacity)
-    #print(result_dynamic, val_dynamic)
-
-    val_deterministic = deterministic_msecretary_array(T, capacity, np.arange(1, T+1))
-
-    result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity, val_deterministic)
-    #print(result_approx, val_approx)
-
-    result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx)
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = dynamic_solution(T, capacity, prob_choice, rewards,vectors)
+    val_deterministic = deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
+    result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
+    result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx, prob_choice, rewards)
     #print(result_eval_approx, val_eval_approx)
 
     t_periods = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
-
-    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/'
 
     for dix, fix_t in enumerate(t_periods):
         plt.figure(figsize=(16,10), dpi= 80)
@@ -197,19 +189,14 @@ if __name__ == '__main__':
         
         plt.legend(loc = "lower right")
         
-        plt.savefig(path+'t_period'+str(T-fix_t)+'.png')
-        plt.clf()
+        plt.show()
 
     
-    result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = approx_n_lookahead(T, capacity, val_deterministic, 5)
-    #print(result_approx, val_approx) 
-
-    result_eval_lookahead, val_eval_lookahead = evaluate_solution(T, capacity, sol_index_lookahead)
-    #print(result_eval_approx, val_eval_approx)
-
+    window = 5
+    result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
+    result_eval_lookahead, val_eval_lookahead = evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards, vectors)
+    
     t_periods = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
-
-    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/'
 
     for dix, fix_t in enumerate(t_periods):
         plt.figure(figsize=(16,10), dpi= 80)
@@ -232,5 +219,4 @@ if __name__ == '__main__':
         
         plt.legend(loc = "lower right")
         
-        plt.savefig(path+'t_period'+str(T-fix_t)+'lookahead.png')
-        plt.clf()
+        plt.show()
