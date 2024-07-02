@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import uniform
 from tqdm import tqdm
+import os 
 import sys
 # Add the directory to sys.path
 module_path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Code/'
@@ -18,9 +19,11 @@ if __name__ == '__main__':
     T = 100 #Time periods remaining. benchmark = 10
     window = 5
 
-    probabilities = uniform.rvs(size = n_types)
-    probabilities /= probabilities.sum()
-    rewards = np.array([4, 2, .5, 9]) #uniform.rvs(scale = 10, size = n_types)
+    #probabilities = uniform.rvs(size = n_types)
+    #probabilities /= probabilities.sum()
+    probabilities = np.array([.25, .25, .25, .25]) 
+    #rewards = np.array([4, 2, .5, 9])
+    rewards = np.array([.5, 1, 1.5, 2])
 
     vectors = ms.generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
@@ -32,7 +35,7 @@ if __name__ == '__main__':
     result_eval_approx, val_eval_approx = ms.evaluate_solution(T, capacity, sol_index_approx, prob_choice, rewards)
     result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
     result_eval_lookahead, val_eval_lookahead = ms.evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
-    windows = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
+    windows = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     suboptimality_gap = {}
     max_suboptimality_gap = {}
@@ -48,7 +51,10 @@ if __name__ == '__main__':
     
     windows_plot = [1, 10, 50]
 
-    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/'
+    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/test'#+str(probabilities)+str(rewards)
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     plt.figure(figsize=(16,10), dpi= 80)
     for dix, win in enumerate(windows_plot):
@@ -66,9 +72,9 @@ if __name__ == '__main__':
     plt.gca().spines["right"].set_alpha(0.3)    
     plt.gca().spines["left"].set_alpha(0.3)       
     
-    plt.savefig(path+'remaining capacity.pdf')
+    plt.savefig(path+'/remaining capacity.pdf')
     plt.clf()
-
+    ############################################################################################################
     plt.figure(figsize=(16,10), dpi= 80)
     # Sort the dictionary by keys
     sorted_data = dict(sorted(max_suboptimality_gap.items()))
@@ -91,5 +97,5 @@ if __name__ == '__main__':
     plt.gca().spines["right"].set_alpha(0.3)    
     plt.gca().spines["left"].set_alpha(0.3)       
     
-    plt.savefig(path+'maximum_sub_gap.pdf')
+    plt.savefig(path+'/maximum_sub_gap.pdf')
     plt.clf()
