@@ -11,6 +11,7 @@ sys.path.append(module_path)
 import multi_secretary as ms
 
 
+
 if __name__ == '__main__':
     np.random.seed(42)
     ######## This are global variables
@@ -22,8 +23,10 @@ if __name__ == '__main__':
     #probabilities = uniform.rvs(size = n_types)
     #probabilities /= probabilities.sum()
     probabilities = np.array([.25, .25, .25, .25]) 
+    #probabilities = np.array([.125, .125, .125, .125, .125, .125, .125, .125]) 
     #rewards = np.array([4, 2, .5, 9])
     rewards = np.array([.5, 1, 1.5, 2])
+    #rewards = np.array([.2, .4, .6, .8, 1, 1.2, 1.4, 1.6])
 
     vectors = ms.generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
@@ -33,32 +36,39 @@ if __name__ == '__main__':
     val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
     result_approx, val_approx, sol_approx, sol_index_approx = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
     result_eval_approx, val_eval_approx = ms.evaluate_solution(T, capacity, sol_index_approx, prob_choice, rewards)
-    result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
-    result_eval_lookahead, val_eval_lookahead = ms.evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
+    #result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
+    #result_eval_lookahead, val_eval_lookahead = ms.evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
     windows = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     suboptimality_gap = {}
     max_suboptimality_gap = {}
+    max_suboptimality_gap_t = {}
+    which_t_max = {}
+    which_x_max = {}
 
-    suboptimality_gap[1] = val_dynamic - val_eval_approx
-    max_suboptimality_gap[1] = np.max(suboptimality_gap[1])
-
+    suboptimality_gap[1] = np.divide(val_dynamic-val_eval_approx, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+    max_suboptimality_gap[1] = np.max(suboptimality_gap[1][T])
+    max_suboptimality_gap_t[1] = np.max(suboptimality_gap[1])
+    which_t_max[1], which_x_max[1] = np.unravel_index(np.argmax(suboptimality_gap[1]), suboptimality_gap[1].shape)
+    
     for window in tqdm(windows):
         result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
         result_eval_lookahead, val_eval_lookahead = ms.evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
-        suboptimality_gap[window] = val_dynamic - val_eval_lookahead
-        max_suboptimality_gap[window] = np.max(suboptimality_gap[window])
+        suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+        max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
+        max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
+        which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
     
     windows_plot = [1, 10, 50]
 
-    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/test'#+str(probabilities)+str(rewards)
+    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/percentage'#+str(probabilities)+str(rewards)
     
     if not os.path.exists(path):
         os.makedirs(path)
 
     plt.figure(figsize=(16,10), dpi= 80)
     for dix, win in enumerate(windows_plot):
-        plt.plot(suboptimality_gap[win][100], linestyle= '-', label = 'lookahead = '+str(win))
+        plt.plot(suboptimality_gap[win][T], linestyle= '-', label = 'lookahead = '+str(win))
     # Decoration
     plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
     plt.yticks(fontsize=12, alpha=.7)
@@ -72,7 +82,7 @@ if __name__ == '__main__':
     plt.gca().spines["right"].set_alpha(0.3)    
     plt.gca().spines["left"].set_alpha(0.3)       
     
-    plt.savefig(path+'/remaining capacity.pdf')
+    plt.savefig(path+'/remaining_capacity.pdf')
     plt.clf()
     ############################################################################################################
     plt.figure(figsize=(16,10), dpi= 80)
