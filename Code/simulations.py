@@ -49,7 +49,7 @@ if __name__ == '__main__':
     val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
     result_lookahead[1], val_lookahead[1], sol_lookahead[1], sol_index_lookahead[1] = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
     result_eval_lookahead[1], val_eval_lookahead[1] = ms.evaluate_solution(T, capacity, sol_index_lookahead[1], prob_choice, rewards)
-    windows = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    windows = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
 
     suboptimality_gap[1] = np.divide(val_dynamic-val_eval_lookahead[1], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
     max_suboptimality_gap[1] = np.max(suboptimality_gap[1][T])
@@ -64,6 +64,7 @@ if __name__ == '__main__':
         max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
         which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
     
+    #########################################################################################################################
     windows_plot = [1, 10, 50]
 
     path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/percentage'#+str(probabilities)+str(rewards)
@@ -89,7 +90,9 @@ if __name__ == '__main__':
     
     plt.savefig(path+'/remaining_capacity.pdf')
     plt.clf()
-    ############################################################################################################
+
+    #######
+
     plt.figure(figsize=(16,10), dpi= 80)
     # Sort the dictionary by keys
     sorted_data = dict(sorted(max_suboptimality_gap.items()))
@@ -148,3 +151,190 @@ if __name__ == '__main__':
                 os.makedirs(path)
             plt.savefig(path+'/action_map_'+str(win)+'.png')
             plt.clf()
+
+    ############################################################################################################
+    ############################################################################################################
+    ############################################################################################################
+    ############################################################################################################
+    #For T=100
+    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/increasing_t'#+str(probabilities)+str(rewards)
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
+    #For T=100 which window has below 0.0005 suboptimality gap
+    plt.figure(figsize=(16,10), dpi= 80)
+    # Sort the dictionary by keys
+    sorted_data = dict(sorted(max_suboptimality_gap.items()))
+    # Extract keys and values
+    x = list(sorted_data.keys())
+    y = list(sorted_data.values())
+    # Create the line plot
+    plt.plot(x, y, color='tab:red', marker='o', markersize=5, markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red')
+    plt.axhline(y=.0005, color='black', linestyle='--', linewidth=2)
+    plt.text(1, .0006, '0.0005', horizontalalignment='center', color='black')
+     # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Lookahead Heuristic Maximum Suboptimality Gap', fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('Number of lookahead steps', fontsize = 14)
+
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)       
+    
+    plt.savefig(path+'/maximum_sub_gap_100_p.png')
+    plt.savefig(path+'/maximum_sub_gap_100_p.pdf')
+    plt.clf()
+
+    ############################################################################################################
+    # For T=150 which window has below 0.0005 suboptimality gap
+
+    ######## This are global variables
+    n_types = 4
+    capacity = 149 #capacity. benchmark = 5
+    T = 150 #Time periods remaining. benchmark = 10
+
+    probabilities = np.array([.25, .25, .25, .25]) 
+    rewards = np.array([.5, 1, 1.5, 2])
+
+    vectors = ms.generate_vectors(n_types)
+    prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
+
+    windows = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+    ########
+
+    suboptimality_gap = {}
+    max_suboptimality_gap = {}
+    max_suboptimality_gap_t = {}
+    which_t_max = {}
+    which_x_max = {}
+    result_lookahead = {}
+    val_lookahead = {}
+    sol_lookahead = {}
+    sol_index_lookahead = {}
+    result_eval_lookahead = {}
+    val_eval_lookahead = {}
+
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, prob_choice, rewards, vectors)
+    val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
+    result_lookahead[1], val_lookahead[1], sol_lookahead[1], sol_index_lookahead[1] = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
+    result_eval_lookahead[1], val_eval_lookahead[1] = ms.evaluate_solution(T, capacity, sol_index_lookahead[1], prob_choice, rewards)
+    
+    suboptimality_gap[1] = np.divide(val_dynamic-val_eval_lookahead[1], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+    max_suboptimality_gap[1] = np.max(suboptimality_gap[1][T])
+    max_suboptimality_gap_t[1] = np.max(suboptimality_gap[1])
+    which_t_max[1], which_x_max[1] = np.unravel_index(np.argmax(suboptimality_gap[1]), suboptimality_gap[1].shape)
+    
+    for window in tqdm(windows):
+        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
+        result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
+        suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead[window], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+        max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
+        max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
+        which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
+    
+    plt.figure(figsize=(16,10), dpi= 80)
+    # Sort the dictionary by keys
+    sorted_data = dict(sorted(max_suboptimality_gap.items()))
+    # Extract keys and values
+    x = list(sorted_data.keys())
+    y = list(sorted_data.values())
+    # Create the line plot
+    plt.plot(x, y, color='tab:red', marker='o', markersize=5, markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red')
+    plt.axhline(y=.0005, color='black', linestyle='--', linewidth=2)
+    plt.text(1, .0006, '0.0005', horizontalalignment='center', color='black')
+     # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Lookahead Heuristic Maximum Suboptimality Gap', fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('Number of lookahead steps', fontsize = 14)
+
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)       
+    
+    plt.savefig(path+'/maximum_sub_gap_150_p.png')
+    plt.savefig(path+'/maximum_sub_gap_150_p.pdf')
+    plt.clf()
+
+
+    ############################################################################################################
+    # For T=200 which window has below 0.0005 suboptimality gap
+
+    ######## This are global variables
+    n_types = 4
+    capacity = 199 #capacity. benchmark = 5
+    T = 200 #Time periods remaining. benchmark = 10
+
+    probabilities = np.array([.25, .25, .25, .25]) 
+    rewards = np.array([.5, 1, 1.5, 2])
+
+    vectors = ms.generate_vectors(n_types)
+    prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
+
+    windows = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200]
+
+    ########
+
+    suboptimality_gap = {}
+    max_suboptimality_gap = {}
+    max_suboptimality_gap_t = {}
+    which_t_max = {}
+    which_x_max = {}
+    result_lookahead = {}
+    val_lookahead = {}
+    sol_lookahead = {}
+    sol_index_lookahead = {}
+    result_eval_lookahead = {}
+    val_eval_lookahead = {}
+
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, prob_choice, rewards, vectors)
+    val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
+    result_lookahead[1], val_lookahead[1], sol_lookahead[1], sol_index_lookahead[1] = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
+    result_eval_lookahead[1], val_eval_lookahead[1] = ms.evaluate_solution(T, capacity, sol_index_lookahead[1], prob_choice, rewards)
+    
+    suboptimality_gap[1] = np.divide(val_dynamic-val_eval_lookahead[1], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+    max_suboptimality_gap[1] = np.max(suboptimality_gap[1][T])
+    max_suboptimality_gap_t[1] = np.max(suboptimality_gap[1])
+    which_t_max[1], which_x_max[1] = np.unravel_index(np.argmax(suboptimality_gap[1]), suboptimality_gap[1].shape)
+    
+    for window in tqdm(windows):
+        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
+        result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
+        suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead[window], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+        max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
+        max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
+        which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
+    
+    plt.figure(figsize=(16,10), dpi= 80)
+    # Sort the dictionary by keys
+    sorted_data = dict(sorted(max_suboptimality_gap.items()))
+    # Extract keys and values
+    x = list(sorted_data.keys())
+    y = list(sorted_data.values())
+    # Create the line plot
+    plt.plot(x, y, color='tab:red', marker='o', markersize=5, markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red')
+    plt.axhline(y=.0005, color='black', linestyle='--', linewidth=2)
+    plt.text(1, .0006, '0.0005', horizontalalignment='center', color='black')
+     # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Lookahead Heuristic Maximum Suboptimality Gap', fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('Number of lookahead steps', fontsize = 14)
+
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)       
+    
+    plt.savefig(path+'/maximum_sub_gap_200_p.png')
+    plt.savefig(path+'/maximum_sub_gap_200_p.pdf')
+    plt.clf()
