@@ -32,29 +32,33 @@ if __name__ == '__main__':
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
     ########
 
-    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, prob_choice, rewards, vectors)
-    val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
-    result_approx, val_approx, sol_approx, sol_index_approx = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
-    result_eval_approx, val_eval_approx = ms.evaluate_solution(T, capacity, sol_index_approx, prob_choice, rewards)
-    #result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
-    #result_eval_lookahead, val_eval_lookahead = ms.evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
-    windows = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-
     suboptimality_gap = {}
     max_suboptimality_gap = {}
     max_suboptimality_gap_t = {}
     which_t_max = {}
     which_x_max = {}
+    result_lookahead = {}
+    val_lookahead = {}
+    sol_lookahead = {}
+    sol_index_lookahead = {}
+    result_eval_lookahead = {}
+    val_eval_lookahead = {}
 
-    suboptimality_gap[1] = np.divide(val_dynamic-val_eval_approx, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, prob_choice, rewards, vectors)
+    val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
+    result_lookahead[1], val_lookahead[1], sol_lookahead[1], sol_index_lookahead[1] = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
+    result_eval_lookahead[1], val_eval_lookahead[1] = ms.evaluate_solution(T, capacity, sol_index_lookahead[1], prob_choice, rewards)
+    windows = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+    suboptimality_gap[1] = np.divide(val_dynamic-val_eval_lookahead[1], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
     max_suboptimality_gap[1] = np.max(suboptimality_gap[1][T])
     max_suboptimality_gap_t[1] = np.max(suboptimality_gap[1])
     which_t_max[1], which_x_max[1] = np.unravel_index(np.argmax(suboptimality_gap[1]), suboptimality_gap[1].shape)
     
     for window in tqdm(windows):
-        result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
-        result_eval_lookahead, val_eval_lookahead = ms.evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
-        suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
+        result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
+        suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead[window], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
         max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
         max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
         which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
