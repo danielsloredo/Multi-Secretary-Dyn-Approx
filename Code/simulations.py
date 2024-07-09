@@ -1,6 +1,8 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 from scipy.stats import uniform
+import seaborn as sns
+import pandas as pd
 from tqdm import tqdm
 import os 
 import sys
@@ -9,7 +11,6 @@ module_path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Code/'
 sys.path.append(module_path)
 # Now you can import your module
 import multi_secretary as ms
-
 
 
 if __name__ == '__main__':
@@ -113,3 +114,29 @@ if __name__ == '__main__':
     
     plt.savefig(path+'/maximum_sub_gap.pdf')
     plt.clf()
+
+
+    ############################################################################################################
+
+    periods_plot = [0, 25, 50, 75]
+    windows_plot = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    for t in periods_plot:
+        for dix, win in enumerate(windows_plot):   
+            df = pd.DataFrame(sol_lookahead[win][100-t], columns=['$r_4=.5$', '$r_3=1$', '$r_2=1.5$', '$r_1=2$'])
+            new_labels = [i / (100-t) for i in range(df.shape[0])]
+
+            # Plotting the heatmap
+            plt.figure(figsize=(16,10), dpi= 80)
+            sns.heatmap(df[100-t:].T, cmap='bwr', cbar=False, annot=False, linewidths=0.5)
+            plt.xlabel('Ratio capacity/remaining periods')
+            plt.ylabel('Reward type')
+            plt.title('Action Map on T='+str(t)+' (Initial Period) for n-lookahead='+str(win))
+            plt.xticks(ticks=np.arange(df.shape[0]) + 0.5, labels=new_labels[100-t], rotation=90)
+            path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/action_map/'+'period_'+str(t)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            plt.savefig(path+'/action_map_'+str(win)+'.png')
