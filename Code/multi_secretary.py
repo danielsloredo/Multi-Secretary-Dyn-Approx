@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cvxpy as cp
 from scipy.stats import uniform
+from tqdm import tqdm
 
 ###############################################################
 # Dynamic programing approach to multisecreatry problem with n 
@@ -27,6 +28,18 @@ def deterministic_msecretary(probabilities, rewards, n_types, t, x):
 
     return result
 
+def deterministic_msecretary_array(T, capacity, approx_periods, probabilities, rewards, n_types):
+    #Solve the deterministic version of the multi-secretary problem for all periods in approx_periods and all capacities
+    val_deterministic = np.zeros((T+1, capacity+1))
+
+    deterministic_period = np.array(approx_periods)
+
+    for t in tqdm(deterministic_period):
+        for x in range(1, capacity+1):
+            val_deterministic[t][x] = deterministic_msecretary(probabilities, rewards, n_types, t, x)
+
+    return val_deterministic
+
 def msecretary(val, sol_index, prob_choice, rewards, t, x): 
     #Bellman recursion for the multi-secretary problem
     if t == 0 or x == 0:
@@ -49,7 +62,7 @@ def msecretary_lookahead(val, sol_index, prob_choice, rewards, t, x, val_determi
     if val[t][x] != 0: 
         return val[t][x]
     
-    if depth == (window-1): 
+    if depth == window: 
         return val_deterministic[t][x]
     
     q_val = (np.sum(prob_choice * (rewards + msecretary_lookahead(val, sol_index, prob_choice, rewards, t-1, x-1, val_deterministic, window, depth+1)), axis = 1) 
@@ -72,19 +85,6 @@ def dynamic_solution(T, capacity, prob_choice, rewards, vectors):
     sol = vectors[sol_index]
 
     return result, val, sol, sol_index
-
-
-def deterministic_msecretary_array(T, capacity, approx_periods, probabilities, rewards, n_types):
-    #Solve the deterministic version of the multi-secretary problem for all periods in approx_periods and all capacities
-    val_deterministic = np.zeros((T+1, capacity+1))
-
-    deterministic_period = np.array(approx_periods)
-
-    for t in deterministic_period:
-        for x in range(1, capacity+1):
-            val_deterministic[t][x] = deterministic_msecretary(probabilities, rewards, n_types, t, x)
-
-    return val_deterministic
 
 def approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors):
     #Approximate dynamic programing solution to the multi-secretary problem (1-lookahead)
@@ -113,7 +113,7 @@ def approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewa
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
 
     result = np.zeros((T+1, capacity+1))
-    solution = np.zeros((T+1, capacity+1, n_types))
+    solution = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
 
     for period in range(1, T+1): 
         val_temp = np.zeros((T+1, capacity+1))
