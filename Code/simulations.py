@@ -17,9 +17,8 @@ if __name__ == '__main__':
     np.random.seed(42)
     ######## This are global variables
     n_types = 4
-    capacity = 99 #capacity. benchmark = 5
+    capacity = 100 #capacity. benchmark = 5
     T = 100 #Time periods remaining. benchmark = 10
-    window = 5
 
     #probabilities = uniform.rvs(size = n_types)
     #probabilities /= probabilities.sum()
@@ -31,6 +30,7 @@ if __name__ == '__main__':
 
     vectors = ms.generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
+    windows = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
     ########
 
     suboptimality_gap = {}
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     val_deterministic = ms.deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
     result_lookahead[1], val_lookahead[1], sol_lookahead[1], sol_index_lookahead[1] = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
     result_eval_lookahead[1], val_eval_lookahead[1] = ms.evaluate_solution(T, capacity, sol_index_lookahead[1], prob_choice, rewards)
-    windows = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+    
 
     suboptimality_gap[1] = np.divide(val_dynamic-val_eval_lookahead[1], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
     max_suboptimality_gap[1] = np.max(suboptimality_gap[1][T])
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     ############################################################################################################
     ############################################################################################################
     ############################################################################################################
-    #For T=100
+    #For T=100 which window has below 0.0005 suboptimality gap
     path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/suboptimality_gap/increasing_t'#+str(probabilities)+str(rewards)
     
     if not os.path.exists(path):

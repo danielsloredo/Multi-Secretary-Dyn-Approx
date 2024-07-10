@@ -113,6 +113,7 @@ def approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewa
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
 
     result = np.zeros((T+1, capacity+1))
+    solution = np.zeros((T+1, capacity+1, n_types))
 
     for period in range(1, T+1): 
         val_temp = np.zeros((T+1, capacity+1))
@@ -122,10 +123,10 @@ def approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewa
             result[period][cap] = msecretary_lookahead(val_temp, sol_index_temp, prob_choice, rewards, period, cap, val_deterministic, window)
             value[period][cap] = val_temp[period][cap]
             sol_index[period][cap] = sol_index_temp[period][cap]
-    
-        sol = vectors[sol_index]
-
-    return result, value, sol, sol_index
+            sol = vectors[sol_index[period][cap]]
+            solution[period][cap] = sol
+            
+    return result, value, solution, sol_index
 
 def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x): 
     #Evaluate approximate solution on the original bellman recursion for the multi-secretary 
