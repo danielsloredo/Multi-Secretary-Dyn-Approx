@@ -20,11 +20,14 @@ def generate_vectors(n):
 
 def deterministic_msecretary(probabilities, rewards, n_types, t, x):
     #Linear programming relaxation of the multi-secretary problem. (The deterministic version)
-    y = cp.Variable(n_types)
-    objective = cp.Maximize(cp.sum(rewards @ y))
-    constraints = [0<=y, y<= probabilities*t, cp.sum(y)<=x]
-    prob = cp.Problem(objective, constraints)
-    result = prob.solve()
+    restriction = np.multiply(probabilities[::-1], t)
+    cumsum = np.cumsum(restriction)
+    i_max = np.argmax(cumsum <= x)
+    y_temp = np.zeros(n_types)
+    y_temp[:i_max+1] = restriction[:i_max+1]
+    y_temp[i_max+1] = x - np.sum(y_temp[:i_max+1])
+    y = y_temp[::-1]
+    result = np.sum(np.multiply(rewards, y))
 
     return result
 
