@@ -20,24 +20,29 @@ def generate_vectors(n):
 
 def deterministic_msecretary(probabilities, rewards, n_types, t, x):
     #Linear programming relaxation of the multi-secretary problem. (The deterministic version)
+    y_temp = np.zeros(n_types)
     restriction = np.multiply(probabilities[::-1], t)
     cumsum = np.cumsum(restriction)
-    i_max = np.argmax(cumsum <= x)
-    y_temp = np.zeros(n_types)
-    y_temp[:i_max+1] = restriction[:i_max+1]
-    y_temp[i_max+1] = x - np.sum(y_temp[:i_max+1])
+    logic_test = cumsum <= x
+    if logic_test.sum() == 0:
+        y_temp[0] = x
+    else:
+        i_max = np.sum(logic_test) - 1
+        y_temp[:i_max+1] = restriction[:i_max+1]
+        if i_max + 1 < n_types:
+            y_temp[i_max+1] = x - np.sum(y_temp[:i_max+1]) 
+    
     y = y_temp[::-1]
     result = np.sum(np.multiply(rewards, y))
 
     return result
 
-def deterministic_msecretary_array(T, capacity, approx_periods, probabilities, rewards, n_types):
+def deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types):
     #Solve the deterministic version of the multi-secretary problem for all periods in approx_periods and all capacities
     val_deterministic = np.zeros((T+1, capacity+1))
 
-    deterministic_period = np.array(approx_periods)
 
-    for t in tqdm(deterministic_period):
+    for t in tqdm(range(1, T+1)):
         for x in range(1, capacity+1):
             val_deterministic[t][x] = deterministic_msecretary(probabilities, rewards, n_types, t, x)
 
@@ -160,21 +165,20 @@ def evaluate_solution(T, capacity, sol_index, prob_choice, rewards):
 
 
 if __name__ == '__main__':
-    np.random.seed(42)
+    
     ######## This are global variables
     n_types = 4
     capacity = 99 #capacity. benchmark = 5
     T = 100 #Time periods remaining. benchmark = 10
 
-    probabilities = uniform.rvs(size = n_types)
-    probabilities /= probabilities.sum()
-    rewards = np.array([4, 2, .5, 9]) #uniform.rvs(scale = 10, size = n_types)
+    probabilities = np.array([.25, .25, .25, .25])
+    rewards = np.array([.5, 2, 4, 9]) #uniform.rvs(scale = 10, size = n_types)
     vectors = generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
     ########
 
     result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = dynamic_solution(T, capacity, prob_choice, rewards,vectors)
-    val_deterministic = deterministic_msecretary_array(T, capacity, np.arange(1, T+1), probabilities, rewards, n_types)
+    val_deterministic = deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
     result_approx, val_approx, sol_approx, sol_index_approx = approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
     result_eval_approx, val_eval_approx = evaluate_solution(T, capacity, sol_index_approx, prob_choice, rewards)
     #print(result_eval_approx, val_eval_approx)
@@ -184,7 +188,7 @@ if __name__ == '__main__':
     for dix, fix_t in enumerate(t_periods):
         plt.figure(figsize=(16,10), dpi= 80)
         plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
-        plt.plot(val_approx[fix_t], color = 'tab:red', label='Value function using bellman approximation')
+        plt.plot(val_deterministic[fix_t], color = 'tab:red', label='Value function using bellman approximation')
         plt.plot(val_eval_approx[fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using solutions from bellman approximation')
 
         # Decoration
@@ -207,14 +211,14 @@ if __name__ == '__main__':
     
     window = 5
     result_lookahead, val_lookahead, sol_lookahead, sol_index_lookahead = approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
-    result_eval_lookahead, val_eval_lookahead = evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards, vectors)
+    result_eval_lookahead, val_eval_lookahead = evaluate_solution(T, capacity, sol_index_lookahead, prob_choice, rewards)
     
     t_periods = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
 
     for dix, fix_t in enumerate(t_periods):
         plt.figure(figsize=(16,10), dpi= 80)
         plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
-        plt.plot(val_lookahead[fix_t], color = 'tab:red', label='Value function using bellman approximation')
+        plt.plot(val_deterministic[fix_t], color = 'tab:red', label='Value function using bellman approximation')
         plt.plot(val_eval_lookahead[fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using solutions from bellman approximation')
 
         # Decoration
@@ -233,3 +237,4 @@ if __name__ == '__main__':
         plt.legend(loc = "lower right")
         
         plt.show()
+
