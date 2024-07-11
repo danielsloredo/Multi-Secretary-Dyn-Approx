@@ -1,5 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from scipy.stats import uniform
 import seaborn as sns
 import pandas as pd
@@ -108,7 +109,51 @@ if __name__ == '__main__':
     ############################################################################################################
     ############################################################################################################
     #Action maps
+    df = pd.DataFrame(sol_index_dynamic)
+    #df_reversed_rows = df.iloc[::-1, :]
+    df_reversed_cols = df.iloc[:, ::-1]
+     # Plotting the heatmap
+    plt.figure(figsize=(16,10), dpi= 80)
+    sns.heatmap(df_reversed_cols, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+    plt.xlabel('Remaining Capacity')
+    plt.ylabel('Remaining Time')
+    plt.title('Action Map for Optimal Solution')
 
+    min_patch = mpatches.Patch(color='blue', label='None')
+    max_patch = mpatches.Patch(color='red', label='Both')
+    middle_patch = mpatches.Patch(color='lavender', label='Highest Type')
+    plt.legend(handles=[min_patch, middle_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
+
+    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/optimal'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    plt.savefig(path+'/action_map_.png')
+    plt.clf()
+
+    for dix, win in enumerate(windows):   
+        df = pd.DataFrame(sol_index_lookahead[win])
+        #df_reversed_rows = df.iloc[::-1, :]
+        df_reversed_cols = df.iloc[:, ::-1]
+        # Plotting the heatmap
+        plt.figure(figsize=(16,10), dpi= 80)
+        sns.heatmap(df_reversed_cols, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+        plt.xlabel('Remaining Capacity')
+        plt.ylabel('Remaining Time')
+        plt.title('Action Map for Lookahead='+str(win))
+
+        min_patch = mpatches.Patch(color='blue', label='None')
+        max_patch = mpatches.Patch(color='red', label='Both')
+        middle_patch = mpatches.Patch(color='lavender', label='Highest Type')
+        plt.legend(handles=[min_patch, middle_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
+
+        path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/lookahead'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        plt.savefig(path+'/action_map_'+str(win)+'.png')
+        plt.clf()
+
+    #######
+    #Action maps for specific period
     periods_plot = [0, 25, 50, 75]
     windows_plot = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     

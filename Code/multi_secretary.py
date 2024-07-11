@@ -40,47 +40,50 @@ def deterministic_msecretary_array(T, capacity, approx_periods, probabilities, r
 
     return val_deterministic
 
-def msecretary(val, sol_index, prob_choice, rewards, t, x): 
+def msecretary(val, sol_index, prob_choice, rewards, flag_computed, t, x): 
     #Bellman recursion for the multi-secretary problem
     if t == 0 or x == 0:
-        return 0 
-    if val[t][x] != 0: 
+        return val[t][x] 
+    if flag_computed[t][x] != 0: 
         return val[t][x]
     
-    q_val = (np.sum(prob_choice * (rewards + msecretary(val, sol_index, prob_choice, rewards, t-1, x-1)), axis = 1) 
-             + (1-prob_choice.sum(axis = 1))*msecretary(val, sol_index, prob_choice, rewards, t-1, x))
+    q_val = (np.sum(np.multiply(prob_choice, (rewards + msecretary(val, sol_index, prob_choice, rewards, flag_computed, t-1, x-1))), axis = 1) 
+             + np.multiply((1-prob_choice.sum(axis = 1)), msecretary(val, sol_index, prob_choice, rewards, flag_computed, t-1, x)))
     
     sol_index[t][x] = np.argmax(q_val)
     val[t][x] = q_val[sol_index[t][x]]
+    flag_computed[t][x] = 1
     
     return val[t][x]
 
-def msecretary_lookahead(val, sol_index, prob_choice, rewards, t, x, val_deterministic, window, depth = 0): 
+def msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t, x, val_deterministic, window, depth = 0): 
     #Bellman recursion for the multi-secretary problem with n-lookahead
     if t == 0 or x == 0:
         return 0 
-    if val[t][x] != 0: 
+    if flag_computed[t][x] != 0: 
         return val[t][x]
     
     if depth == window: 
         return val_deterministic[t][x]
     
-    q_val = (np.sum(prob_choice * (rewards + msecretary_lookahead(val, sol_index, prob_choice, rewards, t-1, x-1, val_deterministic, window, depth+1)), axis = 1) 
-             + (1-prob_choice.sum(axis = 1))*msecretary_lookahead(val, sol_index, prob_choice, rewards, t-1, x, val_deterministic, window, depth+1))
+    q_val = (np.sum(prob_choice * (rewards + msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t-1, x-1, val_deterministic, window, depth+1)), axis = 1) 
+             + (1-prob_choice.sum(axis = 1))*msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t-1, x, val_deterministic, window, depth+1))
     
     sol_index[t][x] = np.argmax(q_val)
     val[t][x] = q_val[sol_index[t][x]]
+    flag_computed[t][x] = 1
     
     return val[t][x]
 
 def dynamic_solution(T, capacity, prob_choice, rewards, vectors):
     #Dynamic programing solution to the multi-secretary problem
     val = np.zeros((T+1, capacity+1))
+    flag_computed = np.zeros((T+1, capacity+1))
     sol_index = np.zeros((T+1, capacity+1), dtype=int)
-
     result = np.zeros((capacity+1))
-    for cap in range(1, capacity+1):
-        result[cap] = msecretary(val, sol_index, prob_choice, rewards, T, cap)
+
+    for cap in reversed(np.arange(1, capacity+1)):
+        result[cap] = msecretary(val, sol_index, prob_choice, rewards, flag_computed, T, cap)
     
     sol = vectors[sol_index]
 
@@ -118,9 +121,10 @@ def approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewa
     for period in range(1, T+1): 
         val_temp = np.zeros((T+1, capacity+1))
         sol_index_temp = np.zeros((T+1, capacity+1), dtype=int)
+        flag_computed_temp = np.zeros((T+1, capacity+1))
 
         for cap in range(1, capacity+1):
-            result[period][cap] = msecretary_lookahead(val_temp, sol_index_temp, prob_choice, rewards, period, cap, val_deterministic, window)
+            result[period][cap] = msecretary_lookahead(val_temp, sol_index_temp, prob_choice, rewards, flag_computed_temp, period, cap, val_deterministic, window)
             value[period][cap] = val_temp[period][cap]
             sol_index[period][cap] = sol_index_temp[period][cap]
             sol = vectors[sol_index[period][cap]]
