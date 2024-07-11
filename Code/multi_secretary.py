@@ -1,7 +1,5 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-import cvxpy as cp
-from scipy.stats import uniform
 from tqdm import tqdm
 
 ###############################################################
@@ -9,14 +7,12 @@ from tqdm import tqdm
 # types, only one type i apearing each time step with prob p_i
 ###############################################################
 def generate_vectors(n):
-    ### Function to create all combinations of [0, 1] of length n
-    # Create a list of [0, 1] repeated n times
-    arrays = [np.array([0, 1])] * n
-    # Use np.meshgrid to create the grid of combinations
-    grid = np.meshgrid(*arrays)
-    # Reshape the grid to get the desired combinations
-    vectors = np.array(grid).T.reshape(-1, n)
-    return vectors
+    vectors = []
+    for i in range(n + 1):
+        vector = [0] * (n - i) + [1] * i
+        vectors.append(vector)
+    
+    return np.array(vectors)
 
 def deterministic_msecretary(probabilities, rewards, n_types, t, x):
     #Linear programming relaxation of the multi-secretary problem. (The deterministic version)
@@ -58,7 +54,14 @@ def msecretary(val, sol_index, prob_choice, rewards, flag_computed, t, x):
     q_val = (np.sum(np.multiply(prob_choice, (rewards + msecretary(val, sol_index, prob_choice, rewards, flag_computed, t-1, x-1))), axis = 1) 
              + np.multiply((1-prob_choice.sum(axis = 1)), msecretary(val, sol_index, prob_choice, rewards, flag_computed, t-1, x)))
     
-    sol_index[t][x] = np.argmax(q_val)
+    max_val = np.max(q_val)
+    indices = np.where(q_val == max_val)[0]
+    if (indices.shape[0] > 1) and (0 in indices):
+        sol_index[t][x] = indices[1]
+    else:
+        sol_index[t][x] = indices[0]
+
+    #sol_index[t][x] = np.argmax(q_val)
     val[t][x] = q_val[sol_index[t][x]]
     flag_computed[t][x] = 1
     
@@ -77,7 +80,14 @@ def msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t, 
     q_val = (np.sum(prob_choice * (rewards + msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t-1, x-1, val_deterministic, window, depth+1)), axis = 1) 
              + (1-prob_choice.sum(axis = 1))*msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t-1, x, val_deterministic, window, depth+1))
     
-    sol_index[t][x] = np.argmax(q_val)
+    max_val = np.max(q_val)
+    indices = np.where(q_val == max_val)[0]
+    if (indices.shape[0] > 1) and (0 in indices):
+        sol_index[t][x] = indices[1]
+    else:
+        sol_index[t][x] = indices[0]
+
+    #sol_index[t][x] = np.argmax(q_val)
     val[t][x] = q_val[sol_index[t][x]]
     flag_computed[t][x] = 1
     

@@ -1,7 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from scipy.stats import uniform
+from matplotlib.colors import ListedColormap
 import seaborn as sns
 import pandas as pd
 from tqdm import tqdm
@@ -109,12 +109,17 @@ if __name__ == '__main__':
     ############################################################################################################
     ############################################################################################################
     #Action maps
+    cmap_dict = {0: 'blue', 1: 'lavender', 2: 'red'}
+    cmap = ListedColormap([cmap_dict[i] for i in range(3)])
     df = pd.DataFrame(sol_index_dynamic)
     #df_reversed_rows = df.iloc[::-1, :]
     df_reversed_cols = df.iloc[:, ::-1]
      # Plotting the heatmap
+    cmap_dict = {0: 'blue', 1: 'lavender', 2: 'red'}
+    cmap = ListedColormap([cmap_dict[i] for i in range(3)])
+
     plt.figure(figsize=(16,10), dpi= 80)
-    sns.heatmap(df_reversed_cols, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+    sns.heatmap(df_reversed_cols, cmap=cmap, cbar=False, annot=False, linewidths=0.5, alpha=0.6)
     plt.xlabel('Remaining Capacity')
     plt.ylabel('Remaining Time')
     plt.title('Action Map for Optimal Solution')
@@ -136,7 +141,7 @@ if __name__ == '__main__':
         df_reversed_cols = df.iloc[:, ::-1]
         # Plotting the heatmap
         plt.figure(figsize=(16,10), dpi= 80)
-        sns.heatmap(df_reversed_cols, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+        sns.heatmap(df_reversed_cols, cmap=cmap, cbar=False, annot=False, linewidths=0.5, alpha=0.6)
         plt.xlabel('Remaining Capacity')
         plt.ylabel('Remaining Time')
         plt.title('Action Map for Lookahead='+str(win))
@@ -161,7 +166,7 @@ if __name__ == '__main__':
         df = pd.DataFrame(sol_dynamic[100-t], columns=['$r_2=1$', '$r_1=2$'])
         # Plotting the heatmap
         plt.figure(figsize=(16,10), dpi= 80)
-        sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+        sns.heatmap(df.T, cmap=cmap, cbar=False, annot=False, linewidths=0.5, alpha=0.6)
         plt.xlabel('Remaining Capacity')
         plt.ylabel('Reward type')
         plt.title('Action Map with Remaining Periods='+str(100-t)+' for Optimal Solution')
