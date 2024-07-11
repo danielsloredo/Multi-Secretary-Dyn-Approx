@@ -164,7 +164,7 @@ if __name__ == '__main__':
         sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
         plt.xlabel('Remaining Capacity')
         plt.ylabel('Reward type')
-        plt.title('Action Map on T='+str(t)+' for Optimal Solution')
+        plt.title('Action Map with Remaining Periods='+str(100-t)+' for Optimal Solution')
 
         import matplotlib.patches as mpatches
         min_patch = mpatches.Patch(color='blue', label='Not selected')
@@ -174,7 +174,7 @@ if __name__ == '__main__':
         path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/optimal'
         if not os.path.exists(path):
             os.makedirs(path)
-        plt.savefig(path+'/action_map_'+str(t)+'.png')
+        plt.savefig(path+'/action_map_'+str(100-t)+'.png')
         plt.clf()
         
         for dix, win in enumerate(windows_plot):   
@@ -184,7 +184,7 @@ if __name__ == '__main__':
             sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
             plt.xlabel('Remaining Capacity')
             plt.ylabel('Reward type')
-            plt.title('Action Map on T='+str(t)+' for n-lookahead='+str(win))
+            plt.title('Action Map with Remaining Periods='+str(100-t)+' for lookahead='+str(win))
 
             #vertical_lines = np.array([.25-.25/2, .5-.25/2, .75-.25/2, 1-.25/2])*(100-t)  # Change these indices as needed
             #for line in vertical_lines:
@@ -194,7 +194,7 @@ if __name__ == '__main__':
             max_patch = mpatches.Patch(color='red', label='Selected')
             plt.legend(handles=[min_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
 
-            path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/'+'period_'+str(t)
+            path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/'+'remaining_period_'+str(100-t)
             if not os.path.exists(path):
                 os.makedirs(path)
             plt.savefig(path+'/action_map_'+str(win)+'.png')

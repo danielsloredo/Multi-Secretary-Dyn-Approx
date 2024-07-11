@@ -59,7 +59,7 @@ def msecretary(val, sol_index, prob_choice, rewards, flag_computed, t, x):
 def msecretary_lookahead(val, sol_index, prob_choice, rewards,flag_computed, t, x, val_deterministic, window, depth = 0): 
     #Bellman recursion for the multi-secretary problem with n-lookahead
     if t == 0 or x == 0:
-        return 0 
+        return val[t][x] 
     if flag_computed[t][x] != 0: 
         return val[t][x]
     
