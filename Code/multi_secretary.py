@@ -37,8 +37,7 @@ def deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
     #Solve the deterministic version of the multi-secretary problem for all periods in approx_periods and all capacities
     val_deterministic = np.zeros((T+1, capacity+1))
 
-
-    for t in tqdm(range(1, T+1)):
+    for t in range(1, T+1):
         for x in range(1, capacity+1):
             val_deterministic[t][x] = deterministic_msecretary(probabilities, rewards, n_types, t, x)
 
@@ -47,17 +46,26 @@ def deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
 def msecretary(val, sol, probabilities, rewards, flag_computed, t, x): 
     #Bellman recursion for the multi-secretary problem
     if t == 0 or x == 0:
-        return val[t][x] 
+        return 0 
     if flag_computed[t][x] != 0: 
         return val[t][x]
     
     next_less = msecretary(val, sol, probabilities, rewards, flag_computed, t-1, x-1)
     next_same = msecretary(val, sol, probabilities, rewards, flag_computed, t-1, x)
 
-    logic_test = (rewards + next_less >= next_same)
-    q_val = np.where(logic_test, rewards + next_less, next_same)
+    #logic_test = (rewards + next_less >= next_same)
+    logic_test_2 = (rewards + next_less > next_same)
+    if logic_test_2.sum() == 0:
+        #I only want the highest one
+        logic_test_3 = np.full(rewards.shape[0], False)
+        logic_test_3[np.argmax(rewards)] = True
+        q_val = np.where(logic_test_3, rewards + next_less, next_same)
+        sol[t][x] = np.where(logic_test_3, 1, 0)  
+    else:
+        q_val = np.where(logic_test_2, rewards + next_less, next_same)
+        sol[t][x] = np.where(logic_test_2, 1, 0)
+        
     val[t][x] = np.sum(np.multiply(probabilities, q_val))
-    sol[t][x] = np.where(logic_test, 1, 0)
     flag_computed[t][x] = 1
     
     return val[t][x]
@@ -65,7 +73,7 @@ def msecretary(val, sol, probabilities, rewards, flag_computed, t, x):
 def msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t, x, val_deterministic, window, depth = 0): 
     #Bellman recursion for the multi-secretary problem with n-lookahead
     if t == 0 or x == 0:
-        return val[t][x] 
+        return 0 
     if flag_computed[t][x] != 0: 
         return val[t][x]
     if depth == window: 
@@ -74,10 +82,19 @@ def msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t, x, 
     next_less = msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t-1, x-1, val_deterministic, window, depth+1)
     next_same = msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t-1, x, val_deterministic, window, depth+1)
 
-    logic_test = (rewards + next_less >= next_same)
-    q_val = np.where(logic_test, rewards + next_less, next_same)
+    #logic_test = (rewards + next_less >= next_same)
+    logic_test_2 = (rewards + next_less > next_same)
+    if logic_test_2.sum() == 0:
+        #I only want the highest one
+        logic_test_3 = np.full(rewards.shape[0], False)
+        logic_test_3[np.argmax(rewards)] = True
+        q_val = np.where(logic_test_3, rewards + next_less, next_same)
+        sol[t][x] = np.where(logic_test_3, 1, 0)  
+    else: 
+        q_val = np.where(logic_test_2, rewards + next_less, next_same)
+        sol[t][x] = np.where(logic_test_2, 1, 0)
+
     val[t][x] = np.sum(np.multiply(probabilities, q_val))
-    sol[t][x] = np.where(logic_test, 1, 0)
     flag_computed[t][x] = 1
         
     return val[t][x]

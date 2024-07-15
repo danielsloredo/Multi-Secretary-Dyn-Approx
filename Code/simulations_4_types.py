@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap
-from scipy.stats import uniform
 import seaborn as sns
 import pandas as pd
 from tqdm import tqdm
@@ -19,11 +18,12 @@ if __name__ == '__main__':
     capacity = 100 #capacity upper bound
     T = 100 #Total time of observation
     probabilities = np.array([.25, .25, .25, .25]) 
-    rewards = np.array([.5, 1, 1.5, 2])
+    rewards = np.array([.5, 1, 1.5, 2]) * (10**10)
 
     vectors = ms.generate_vectors(n_types)
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
-    windows = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+    windows = [i for i in np.arange(5, T+5, 5)]
+    windows.insert(0, 1)
     ########
 
     suboptimality_gap = {}
@@ -38,13 +38,11 @@ if __name__ == '__main__':
     result_eval_lookahead = {}
     val_eval_lookahead = {}
 
-    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, prob_choice, rewards, vectors)
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, probabilities, rewards, vectors)
     val_deterministic = ms.deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
-    #result_lookahead[1], val_lookahead[1], sol_lookahead[1], sol_index_lookahead[1] = ms.approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors)
-    #result_eval_lookahead[1], val_eval_lookahead[1] = ms.evaluate_solution(T, capacity, sol_index_lookahead[1], prob_choice, rewards)
     
     for window in tqdm(windows):
-        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, prob_choice, rewards, vectors)
+        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors)
         result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
         suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead[window], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
         max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
@@ -113,7 +111,7 @@ if __name__ == '__main__':
     if not os.path.exists(path):
         os.makedirs(path)
     
-    t_periods = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
+    t_periods = [i for i in np.arange(5, T+5, 5)]
 
     for dix, fix_t in enumerate(t_periods):
         plt.figure(figsize=(16,10), dpi= 80)
@@ -221,16 +219,17 @@ if __name__ == '__main__':
         plt.close()
  
     ############################################################################################################
-    periods_plot = [0, 25, 50, 75]
+    periods_plot = [i for i in np.arange(5, T, 5)]
+    periods_plot.insert(0, 0)
     
     for t in periods_plot:
-        df = pd.DataFrame(sol_dynamic[100-t], columns=['$r_4=.5$', '$r_3=1$', '$r_2=1.5$', '$r_1=2$'])
+        df = pd.DataFrame(sol_dynamic[T-t], columns=['$r_4=.5$', '$r_3=1$', '$r_2=1.5$', '$r_1=2$'])
         # Plotting the heatmap
         plt.figure(figsize=(16,10), dpi= 80)
         sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
         plt.xlabel('Remaining Capacity')
         plt.ylabel('Reward type')
-        plt.title('Action Map on T='+str(t)+' for Optimal Solution')
+        plt.title('Action Map with Remaining Periods='+str(T-t)+' for Optimal Solution')
 
         min_patch = mpatches.Patch(color='blue', label='Not selected')
         max_patch = mpatches.Patch(color='red', label='Selected')
@@ -239,24 +238,24 @@ if __name__ == '__main__':
         path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/4_types/action_map/optimal'
         if not os.path.exists(path):
             os.makedirs(path)
-        plt.savefig(path+'/action_map_'+str(t)+'.png')
+        plt.savefig(path+'/action_map_'+str(T-t)+'.png')
         plt.close()
         
         for dix, win in enumerate(windows):   
-            df = pd.DataFrame(sol_lookahead[win][100-t], columns=['$r_4=.5$', '$r_3=1$', '$r_2=1.5$', '$r_1=2$'])
+            df = pd.DataFrame(sol_lookahead[win][T-t], columns=['$r_4=.5$', '$r_3=1$', '$r_2=1.5$', '$r_1=2$'])
 
             # Plotting the heatmap
             plt.figure(figsize=(16,10), dpi= 80)
             sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
             plt.xlabel('Remaining Capacity')
             plt.ylabel('Reward type')
-            plt.title('Action Map on T='+str(t)+' for n-lookahead='+str(win))
-
+            plt.title('Action Map with Remaining Periods='+str(T-t)+' for lookahead='+str(win))
+            
             min_patch = mpatches.Patch(color='blue', label='Not selected')
             max_patch = mpatches.Patch(color='red', label='Selected')
             plt.legend(handles=[min_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
 
-            path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/4_types/action_map/'+'period_'+str(t)
+            path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/4_types/action_map/'+'remaining_period_'+str(T-t)
             if not os.path.exists(path):
                 os.makedirs(path)
             plt.savefig(path+'/action_map_'+str(win)+'.png')
