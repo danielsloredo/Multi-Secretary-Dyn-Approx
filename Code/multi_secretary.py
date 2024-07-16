@@ -53,9 +53,9 @@ def msecretary(val, sol, probabilities, rewards, flag_computed, t, x):
     next_less = msecretary(val, sol, probabilities, rewards, flag_computed, t-1, x-1)
     next_same = msecretary(val, sol, probabilities, rewards, flag_computed, t-1, x)
 
-    #logic_test = (rewards + next_less >= next_same)
+    logic_test = (rewards + next_less >= next_same)
     logic_test_2 = (rewards + next_less > next_same)
-    if logic_test_2.sum() == 0:
+    if logic_test_2.sum() == 0 and logic_test.sum() > 0:
         #I only want the highest one
         logic_test_3 = np.full(rewards.shape[0], False)
         logic_test_3[np.argmax(rewards)] = True
@@ -84,15 +84,16 @@ def msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t, x, 
 
     #logic_test = (rewards + next_less >= next_same)
     logic_test_2 = (rewards + next_less > next_same)
-    if logic_test_2.sum() == 0:
-        #I only want the highest one
-        logic_test_3 = np.full(rewards.shape[0], False)
-        logic_test_3[np.argmax(rewards)] = True
-        q_val = np.where(logic_test_3, rewards + next_less, next_same)
-        sol[t][x] = np.where(logic_test_3, 1, 0)  
-    else: 
-        q_val = np.where(logic_test_2, rewards + next_less, next_same)
-        sol[t][x] = np.where(logic_test_2, 1, 0)
+    #if logic_test_2.sum() == 0:
+    #    #I only want the highest one
+    #    logic_test_3 = np.full(rewards.shape[0], False)
+    #    logic_test_3[np.argmax(rewards)] = True
+    #    q_val = np.where(logic_test_3, rewards + next_less, next_same)
+    #    sol[t][x] = np.where(logic_test_3, 1, 0)  
+    #else: 
+    
+    q_val = np.where(logic_test_2, rewards + next_less, next_same)
+    sol[t][x] = np.where(logic_test_2, 1, 0)
 
     val[t][x] = np.sum(np.multiply(probabilities, q_val))
     flag_computed[t][x] = 1
