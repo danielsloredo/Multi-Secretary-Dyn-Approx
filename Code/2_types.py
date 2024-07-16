@@ -24,6 +24,7 @@ if __name__ == '__main__':
     prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
     windows = [i for i in np.arange(5, T+5, 5)]
     windows.insert(0, 1)
+    path_0 = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/'
     ########
 
     suboptimality_gap = {}
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     for window in tqdm(windows):
         result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors)
         result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
-        suboptimality_gap[window] = np.divide(val_dynamic-val_eval_lookahead[window], val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
+        suboptimality_gap[window] = val_dynamic-val_eval_lookahead[window]#, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
         max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
         max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
         which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
@@ -52,7 +53,7 @@ if __name__ == '__main__':
     #########################################################################################################################
     windows_plot = [1, 5, 10, 20, 40]
 
-    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/suboptimality_gap'
+    path = path_0 + 'suboptimality_gap'
     
     if not os.path.exists(path):
         os.makedirs(path)
@@ -126,7 +127,7 @@ if __name__ == '__main__':
     middle_patch = mpatches.Patch(color='lavender', label='Highest Type')
     plt.legend(handles=[min_patch, middle_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
 
-    path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/optimal'
+    path = path_0 + 'action_map/optimal'
     if not os.path.exists(path):
         os.makedirs(path)
     plt.savefig(path+'/action_map_.png')
@@ -148,7 +149,7 @@ if __name__ == '__main__':
         middle_patch = mpatches.Patch(color='lavender', label='Highest Type')
         plt.legend(handles=[min_patch, middle_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
 
-        path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/lookahead'
+        path = path_0 + 'action_map/lookahead'
         if not os.path.exists(path):
             os.makedirs(path)
         plt.savefig(path+'/action_map_'+str(win)+'.png')
@@ -172,7 +173,7 @@ if __name__ == '__main__':
         max_patch = mpatches.Patch(color='red', label='Selected')
         plt.legend(handles=[min_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
 
-        path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/optimal'
+        path = path_0 + 'action_map/optimal'
         if not os.path.exists(path):
             os.makedirs(path)
         plt.savefig(path+'/action_map_'+str(T-t)+'.png')
@@ -191,7 +192,49 @@ if __name__ == '__main__':
             max_patch = mpatches.Patch(color='red', label='Selected')
             plt.legend(handles=[min_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
 
-            path = 'C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Figures/2_types/action_map/'+'remaining_period_'+str(T-t)
+            path = path_0 + 'action_map/'+'remaining_period_'+str(T-t)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            plt.savefig(path+'/action_map_'+str(win)+'.png')
+            plt.close()
+
+    #######
+    #Action maps for specific capacity
+    capacity_plot = [i for i in np.arange(5, capacity, 5)]
+    
+    for cap in capacity_plot:
+        df = pd.DataFrame(sol_dynamic[:, capacity], columns=['$r_2=1$', '$r_1=2$'])
+        # Plotting the heatmap
+        plt.figure(figsize=(16,10), dpi= 80)
+        sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+        plt.xlabel('Remaining Time')
+        plt.ylabel('Reward type')
+        plt.title('Action Map with Remaining Capacity='+str(cap)+' for Optimal Solution')
+
+        min_patch = mpatches.Patch(color='blue', label='Not selected')
+        max_patch = mpatches.Patch(color='red', label='Selected')
+        plt.legend(handles=[min_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
+
+        path = path_0 + 'action_map/optimal'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        plt.savefig(path+'/action_map_capacity_'+str(cap)+'.png')
+        plt.close()
+        
+        for dix, win in enumerate(windows):   
+            df = pd.DataFrame(sol_lookahead[win][:,cap], columns=['$r_2=1$', '$r_1=2$'])
+            # Plotting the heatmap
+            plt.figure(figsize=(16,10), dpi= 80)
+            sns.heatmap(df.T, cmap='bwr', cbar=False, annot=False, linewidths=0.5, alpha=0.6)
+            plt.xlabel('Remaining Time')
+            plt.ylabel('Reward type')
+            plt.title('Action Map with Remaining Capacity='+str(cap)+' for lookahead='+str(win))
+
+            min_patch = mpatches.Patch(color='blue', label='Not selected')
+            max_patch = mpatches.Patch(color='red', label='Selected')
+            plt.legend(handles=[min_patch, max_patch], loc='upper right', bbox_to_anchor=(1.12, 1))
+
+            path = path_0 + 'action_map/'+'remaining_capacity_'+str(cap)
             if not os.path.exists(path):
                 os.makedirs(path)
             plt.savefig(path+'/action_map_'+str(win)+'.png')
