@@ -39,12 +39,12 @@ if __name__ == '__main__':
     result_eval_lookahead = {}
     val_eval_lookahead = {}
 
-    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, probabilities, rewards, vectors)
+    result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_msecretary(T, capacity, probabilities, rewards, vectors)
     val_deterministic = ms.deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
     
     for window in tqdm(windows):
-        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors)
-        result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
+        result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.dynamic_msecretary_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors)
+        result_eval_lookahead[window], val_eval_lookahead[window] = ms.dynamic_evaluate_solution(T, capacity, sol_lookahead[window], probabilities, rewards)
         suboptimality_gap[window] = val_dynamic-val_eval_lookahead[window]#, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
         max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
         max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
@@ -103,6 +103,112 @@ if __name__ == '__main__':
     
     plt.savefig(path+'/maximum_sub_gap.pdf')
     plt.close()
+
+#################################################################################################################
+    path = path_0 + 'value_functions/LP_Optimal'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    t_periods = [i for i in np.arange(5, T+5, 5)]
+
+    for dix, fix_t in enumerate(t_periods):
+        plt.figure(figsize=(16,10), dpi= 80)
+        plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
+        plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
+        
+        # Decoration
+        plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+        plt.yticks(fontsize=12, alpha=.7)
+        plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+        plt.grid(axis='both', alpha=.3)
+        plt.xlabel('x (capacity)', fontsize = 14)
+        
+        # Remove borders
+        plt.gca().spines["top"].set_alpha(0.3)    
+        plt.gca().spines["bottom"].set_alpha(0.3)
+        plt.gca().spines["right"].set_alpha(0.3)    
+        plt.gca().spines["left"].set_alpha(0.3)   
+        plt.legend(loc = "lower right")
+        plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
+        plt.close()
+
+    for dix, fix_t in enumerate(t_periods):
+        plt.figure(figsize=(16,10), dpi= 80)
+        plt.plot(val_deterministic[fix_t]-val_dynamic[fix_t], color = 'tab:red', label='Difference LP-DP')
+        
+        # Decoration
+        plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+        plt.yticks(fontsize=12, alpha=.7)
+        plt.title('Difference in Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+        plt.grid(axis='both', alpha=.3)
+        plt.xlabel('x (capacity)', fontsize = 14)
+        
+        # Remove borders
+        plt.gca().spines["top"].set_alpha(0.3)    
+        plt.gca().spines["bottom"].set_alpha(0.3)
+        plt.gca().spines["right"].set_alpha(0.3)    
+        plt.gca().spines["left"].set_alpha(0.3)   
+        plt.legend(loc = "lower right")
+        plt.savefig(path+'/diff_value_functions_'+str(fix_t)+'.png')
+        plt.close()
+    
+    path = path_0 + 'value_functions/1_lookahead'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    t_periods = [i for i in np.arange(5, T+5, 5)]
+
+    for dix, fix_t in enumerate(t_periods):
+        plt.figure(figsize=(16,10), dpi= 80)
+        plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
+        plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
+        plt.plot(val_eval_lookahead[1][fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using '+str(1)+'-lookahead bellman approximation')
+
+        # Decoration
+        plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+        plt.yticks(fontsize=12, alpha=.7)
+        plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+        plt.grid(axis='both', alpha=.3)
+        plt.xlabel('x (capacity)', fontsize = 14)
+        
+        # Remove borders
+        plt.gca().spines["top"].set_alpha(0.3)    
+        plt.gca().spines["bottom"].set_alpha(0.3)
+        plt.gca().spines["right"].set_alpha(0.3)    
+        plt.gca().spines["left"].set_alpha(0.3)   
+        plt.legend(loc = "lower right")
+        plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
+        plt.close()
+
+    
+    path = path_0 + 'value_functions/5_lookahead'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    window = 5
+
+    for dix, fix_t in enumerate(t_periods):
+        plt.figure(figsize=(16,10), dpi= 80)
+        plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal value function', linestyle = '--')
+        plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
+        plt.plot(val_eval_lookahead[window][fix_t], color = 'tab:blue', linestyle= '-', marker = '.', label = 'Value function using '+str(5)+'-lookahead bellman approximation')
+
+        # Decoration
+        plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+        plt.yticks(fontsize=12, alpha=.7)
+        plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+        plt.grid(axis='both', alpha=.3)
+        plt.xlabel('x (capacity)', fontsize = 14)
+        
+        # Remove borders
+        plt.gca().spines["top"].set_alpha(0.3)    
+        plt.gca().spines["bottom"].set_alpha(0.3)
+        plt.gca().spines["right"].set_alpha(0.3)    
+        plt.gca().spines["left"].set_alpha(0.3)   
+        plt.legend(loc = "lower right")
+        plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
+        plt.close()
+
 
 
     ############################################################################################################
