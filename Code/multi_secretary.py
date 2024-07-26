@@ -37,11 +37,55 @@ def deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
     #Solve the deterministic version of the multi-secretary problem for all periods in approx_periods and all capacities
     val_deterministic = np.zeros((T+1, capacity+1))
 
-    for t in range(1, T+1):
+    for t in tqdm(range(1, T+1)):
         for x in range(1, capacity+1):
             val_deterministic[t][x] = deterministic_msecretary(probabilities, rewards, n_types, t, x)
 
     return val_deterministic
+
+def offline_msecretary(number_type, rewards, n_types, x):
+    #Offline solution to the multi-secretary problem
+    y_temp = np.zeros(n_types)
+    restriction = number_type[::-1]
+    cumsum = np.cumsum(restriction)
+    logic_test = cumsum <= x
+    if logic_test.sum() == 0:
+        y_temp[0] = x
+    else:
+        i_max = np.sum(logic_test) - 1
+        y_temp[:i_max+1] = restriction[:i_max+1]
+        if i_max + 1 < n_types:
+            y_temp[i_max+1] = x - np.sum(y_temp[:i_max+1]) 
+    
+    y = y_temp[::-1]
+    result = np.sum(np.multiply(rewards, y))
+
+    return result
+
+def simulate_offline_msecretary(T, periods, probabilities, rewards, n_types, n_sims, seed = 42):
+    val_offline = {i : np.zeros((n_sims, i+1)) for i in periods}
+    np.random.seed(seed)
+    for sim in tqdm(np.arange(n_sims)):
+        uniform_1 = np.random.rand(T) 
+        arrival_type_1 = np.empty(T, dtype=int)
+        uniform_2 = 1-uniform_1 
+        arrival_type_2 = np.empty(T, dtype=int)
+        for type in np.arange(n_types):
+            arrival_type_1[(uniform_1>=np.sum(probabilities[:type])) & (uniform_1 < np.sum(probabilities[:type+1]))] = type
+            arrival_type_2[(uniform_2>=np.sum(probabilities[:type])) & (uniform_2 < np.sum(probabilities[:type+1]))] = type
+        for period in periods:
+            number_type_1 = np.zeros(n_types)
+            number_type_2 = np.zeros(n_types)
+            for type in np.arange(n_types):
+                number_type_1[type] = np.sum(arrival_type_1[:period] == type)
+                number_type_2[type] = np.sum(arrival_type_2[:period] == type)
+            for x in range(1, period+1):
+                val_1 = offline_msecretary(number_type_1, rewards, n_types, x)
+                val_2 = offline_msecretary(number_type_2, rewards, n_types, x)
+                val_offline[period][sim][x] = (val_1 + val_2)/2
+
+    return val_offline
+
 
 def msecretary(val, sol, probabilities, rewards, flag_computed, t, x): 
     #Bellman recursion for the multi-secretary problem
@@ -82,16 +126,8 @@ def msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t, x, 
     next_less = msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t-1, x-1, val_deterministic, window, depth+1)
     next_same = msecretary_lookahead(val, sol, probabilities, rewards, flag_computed, t-1, x, val_deterministic, window, depth+1)
 
-    #logic_test = (rewards + next_less >= next_same)
     logic_test_2 = (rewards + next_less > next_same)
-    #if logic_test_2.sum() == 0:
-    #    #I only want the highest one
-    #    logic_test_3 = np.full(rewards.shape[0], False)
-    #    logic_test_3[np.argmax(rewards)] = True
-    #    q_val = np.where(logic_test_3, rewards + next_less, next_same)
-    #    sol[t][x] = np.where(logic_test_3, 1, 0)  
-    #else: 
-    
+
     q_val = np.where(logic_test_2, rewards + next_less, next_same)
     sol[t][x] = np.where(logic_test_2, 1, 0)
 
@@ -138,26 +174,70 @@ def approx_n_lookahead(T, capacity, val_deterministic, window, probabilities, re
 
     return result, value, solution, sol_index
 
-def approx_dynamic_solution(T, capacity, val_deterministic, prob_choice, rewards, vectors):
-    #Approximate dynamic programing solution to the multi-secretary problem (1-lookahead)
-
+def dynamic_msecretary(T, capacity, probabilities, rewards, vectors):
     val = np.zeros((T+1, capacity+1))
-    sol_index = np.zeros((T+1, capacity+1), dtype=int)
-    
-    for t in range(1, T+1):
-        for x in range(1, capacity+1):
-            if t == 0 or x == 0:
-                val[t][x] = 0 
-    
-            q_val = (np.sum(prob_choice * (rewards + val_deterministic[t-1][x-1]), axis = 1) 
-                     + (1-prob_choice.sum(axis = 1))*val_deterministic[t-1][x])
-            sol_index[t][x] = np.argmax(q_val)
-            val[t][x] = q_val[sol_index[t][x]]
+    sol = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+    result = np.zeros((capacity+1))
 
-    result = val[T][capacity]
-    sol = vectors[sol_index]
+    for t in tqdm(np.arange(1, T+1)):
+        for x in np.arange(1, capacity+1):
+            next_less = val[t-1][x-1]
+            next_same = val[t-1][x]
+
+            logic_test = (rewards + next_less >= next_same)
+            q_val = np.where(logic_test, rewards + next_less, next_same)
+            val[t][x] = np.sum(np.multiply(probabilities, q_val))
+            #solution
+            logic_test_2 = (rewards + next_less > next_same)
+            if logic_test_2.sum() == 0 and logic_test.sum() > 0:
+                logic_test_3 = np.full(rewards.shape[0], False)
+                logic_test_3[np.argmax(rewards)] = True
+                sol[t][x] = np.where(logic_test_3, 1, 0)  
+            else:
+                sol[t][x] = np.where(logic_test_2, 1, 0)
+
+    comparison = sol[..., np.newaxis, :] == vectors
+    matches = np.all(comparison, axis=-1)
+    sol_index = np.argmax(matches, axis=-1)
+    result = val[T]
 
     return result, val, sol, sol_index
+
+def dynamic_msecretary_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors):
+    value = np.zeros((T+1, capacity+1))
+    result = np.zeros((T+1, capacity+1))
+    solution = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+
+    for period in tqdm(range(1, T+1)): 
+        val_temp = np.zeros((T+1, capacity+1))
+        sol_temp = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+        
+        small_t = period-window+1 if period-window+1 > 0 else 1
+        for t in np.arange(small_t, period+1):
+            for x in np.arange(1, capacity+1):
+                if t == period-window+1:
+                    next_less = val_deterministic[t-1][x-1]
+                    next_same = val_deterministic[t-1][x]
+                else: 
+                    next_less = val_temp[t-1][x-1]
+                    next_same = val_temp[t-1][x]
+
+                logic_test_2 = (rewards + next_less > next_same)
+                q_val = np.where(logic_test_2, rewards + next_less, next_same)
+                val_temp[t][x] = np.sum(np.multiply(probabilities, q_val))
+                sol_temp[t][x] = np.where(logic_test_2, 1, 0)
+
+                if t == period:
+                    value[t][x] = val_temp[t][x]
+                    solution[t][x] = sol_temp[t][x]
+        
+        result[period] = value[period]
+            
+    comparison = solution[..., np.newaxis, :] == vectors
+    matches = np.all(comparison, axis=-1)
+    sol_index = np.argmax(matches, axis=-1)
+
+    return result, value, solution, sol_index
 
 def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x): 
     #Evaluate approximate solution on the original bellman recursion for the multi-secretary 
@@ -182,6 +262,24 @@ def evaluate_solution(T, capacity, sol_index, prob_choice, rewards):
         result[cap] = evaluate_msecretary(val, sol_index, prob_choice, rewards, T, cap)
     
     return result[capacity], val
+
+def dynamic_evaluate_solution(T, capacity, sol, probabilities, rewards):
+    
+    val = np.zeros((T+1, capacity+1))
+    result = np.zeros((capacity+1))
+
+    for t in np.arange(1, T+1):
+        for x in np.arange(1, capacity+1):
+            next_less = val[t-1][x-1]
+            next_same = val[t-1][x]
+
+            logic_test = sol[t][x] > 0 
+            q_val = np.where(logic_test, rewards + next_less, next_same)
+            val[t][x] = np.sum(np.multiply(probabilities, q_val))
+    
+    result = val[T]
+
+    return result, val
 
 
 if __name__ == '__main__':
