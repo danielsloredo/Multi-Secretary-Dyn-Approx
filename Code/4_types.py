@@ -56,62 +56,6 @@ for window in tqdm(windows):
 #########################################################################################################################
 #########################################################################################################################
 #########################################################################################################################
-#Subotimality gap plots 
-windows_plot = [1, 10, 50]
-
-path = path_0 + 'suboptimality_gap'
-
-if not os.path.exists(path):
-    os.makedirs(path)
-
-plt.figure(figsize=(16,10), dpi= 80)
-for dix, win in enumerate(windows_plot):
-    plt.plot(suboptimality_gap[win][T], linestyle= '-', label = 'lookahead = '+str(win))
-# Decoration
-plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-plt.yticks(fontsize=12, alpha=.7)
-plt.title('Suboptimality Gap Lookahead Approximation', fontsize=20)
-plt.grid(axis='both', alpha=.3)
-plt.xlabel('Remaining capacity', fontsize = 14)
-plt.legend(loc = "lower right")
-# Remove borders
-plt.gca().spines["top"].set_alpha(0.3)    
-plt.gca().spines["bottom"].set_alpha(0.3)
-plt.gca().spines["right"].set_alpha(0.3)    
-plt.gca().spines["left"].set_alpha(0.3)       
-
-plt.savefig(path+'/remaining_capacity.pdf')
-plt.close()
-
-#########################################################################################################################
-
-plt.figure(figsize=(16,10), dpi= 80)
-# Sort the dictionary by keys
-sorted_data = dict(sorted(max_suboptimality_gap.items()))
-# Extract keys and values
-x = list(sorted_data.keys())
-y = list(sorted_data.values())
-# Create the line plot
-plt.plot(x, y, color='tab:red', marker='o', markersize=5, 
-            markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red')
-    # Decoration
-plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-plt.yticks(fontsize=12, alpha=.7)
-plt.title('Lookahead Heuristic Maximum Suboptimality Gap', fontsize=20)
-plt.grid(axis='both', alpha=.3)
-plt.xlabel('Number of lookahead steps', fontsize = 14)
-
-# Remove borders
-plt.gca().spines["top"].set_alpha(0.3)    
-plt.gca().spines["bottom"].set_alpha(0.3)
-plt.gca().spines["right"].set_alpha(0.3)    
-plt.gca().spines["left"].set_alpha(0.3)       
-
-plt.savefig(path+'/maximum_sub_gap.pdf')
-plt.close()
-#########################################################################################################################
-#########################################################################################################################
-#########################################################################################################################
 #Value functions
 path = path_0 + 'value_functions/LP_Optimal'
 if not os.path.exists(path):
@@ -219,6 +163,63 @@ for dix, fix_t in enumerate(t_periods):
     plt.legend(loc = "lower right")
     plt.savefig(path+'/diff/diff_value_functions_'+str(fix_t)+'.png')
     plt.close()
+
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
+#Subotimality gap plots 
+windows_plot = [1, 10, 50]
+
+path = path_0 + 'suboptimality_gap'
+
+if not os.path.exists(path):
+    os.makedirs(path)
+
+plt.figure(figsize=(16,10), dpi= 80)
+for dix, win in enumerate(windows_plot):
+    plt.plot(suboptimality_gap[win][T], linestyle= '-', label = 'lookahead = '+str(win))
+# Decoration
+plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+plt.yticks(fontsize=12, alpha=.7)
+plt.title('Suboptimality Gap Lookahead Approximation', fontsize=20)
+plt.grid(axis='both', alpha=.3)
+plt.xlabel('Remaining capacity', fontsize = 14)
+plt.legend(loc = "lower right")
+# Remove borders
+plt.gca().spines["top"].set_alpha(0.3)    
+plt.gca().spines["bottom"].set_alpha(0.3)
+plt.gca().spines["right"].set_alpha(0.3)    
+plt.gca().spines["left"].set_alpha(0.3)       
+
+plt.savefig(path+'/remaining_capacity.pdf')
+plt.close()
+
+#########################################################################################################################
+
+plt.figure(figsize=(16,10), dpi= 80)
+# Sort the dictionary by keys
+sorted_data = dict(sorted(max_suboptimality_gap.items()))
+# Extract keys and values
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+# Create the line plot
+plt.plot(x, y, color='tab:red', marker='o', markersize=5, 
+            markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red')
+    # Decoration
+plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+plt.yticks(fontsize=12, alpha=.7)
+plt.title('Lookahead Heuristic Maximum Suboptimality Gap', fontsize=20)
+plt.grid(axis='both', alpha=.3)
+plt.xlabel('Number of lookahead steps', fontsize = 14)
+
+# Remove borders
+plt.gca().spines["top"].set_alpha(0.3)    
+plt.gca().spines["bottom"].set_alpha(0.3)
+plt.gca().spines["right"].set_alpha(0.3)    
+plt.gca().spines["left"].set_alpha(0.3)       
+
+plt.savefig(path+'/maximum_sub_gap.pdf')
+plt.close()
 
 
 ############################################################################################################

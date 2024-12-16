@@ -205,6 +205,7 @@ def dynamic_msecretary(T, capacity, probabilities, rewards, vectors):
 
 def dynamic_msecretary_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors):
     value = np.zeros((T+1, capacity+1))
+    value_next = np.zeros((T+1, capacity+1))
     result = np.zeros((T+1, capacity+1))
     solution = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
 
@@ -230,6 +231,10 @@ def dynamic_msecretary_lookahead(T, capacity, val_deterministic, window, probabi
                 if t == period:
                     value[t][x] = val_temp[t][x]
                     solution[t][x] = sol_temp[t][x]
+                    value_next[t][x] = val_temp[t-1][x]
+                
+                if t == period-window+1:
+                    value_next[t][x] = val_deterministic[t-1][x]
         
         result[period] = value[period]
             
@@ -237,7 +242,95 @@ def dynamic_msecretary_lookahead(T, capacity, val_deterministic, window, probabi
     matches = np.all(comparison, axis=-1)
     sol_index = np.argmax(matches, axis=-1)
 
-    return result, value, solution, sol_index
+    return result, value, solution, sol_index, value_next
+
+def dynamic_msecretary_lookahead_2(T, capacity, val_deterministic, wind, probabilities, rewards, vectors):
+    value = np.zeros((T+1, capacity+1))
+    value_next = np.zeros((T+1, capacity+1))
+    result = np.zeros((T+1, capacity+1))
+    solution = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+
+    for period in tqdm(range(1, T+1)): 
+        val_temp = np.zeros((T+1, capacity+1))
+        sol_temp = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+        window = int(np.floor(period**(wind)))+1
+        small_t = period-window+1 if period-window+1 > 0 else 1
+        for t in np.arange(small_t, period+1):
+            for x in np.arange(1, capacity+1):
+                if t == period-window+1:
+                    next_less = val_deterministic[t-1][x-1]
+                    next_same = val_deterministic[t-1][x]
+                else: 
+                    next_less = val_temp[t-1][x-1]
+                    next_same = val_temp[t-1][x]
+
+                logic_test_2 = (rewards + next_less > next_same)
+                if x>=t:
+                    logic_test_2[0] = True
+                else:
+                    logic_test_2[0] = False #I want to avoid the case where the last type is selected
+                
+                q_val = np.where(logic_test_2, rewards + next_less, next_same)
+                val_temp[t][x] = np.sum(np.multiply(probabilities, q_val))
+                sol_temp[t][x] = np.where(logic_test_2, 1, 0)
+
+                if t == period:
+                    value[t][x] = val_temp[t][x]
+                    solution[t][x] = sol_temp[t][x]
+                    value_next[t][x] = val_temp[t-1][x]
+                
+                if t == period-window+1:
+                    value_next[t][x] = val_deterministic[t-1][x]
+        
+        result[period] = value[period]
+            
+    comparison = solution[..., np.newaxis, :] == vectors
+    matches = np.all(comparison, axis=-1)
+    sol_index = np.argmax(matches, axis=-1)
+
+    return result, value, solution, sol_index, value_next
+
+def dynamic_msecretary_lookahead_3(T, capacity, val_deterministic, window_size, probabilities, rewards, vectors):
+    value = np.zeros((T+1, capacity+1))
+    value_next = np.zeros((T+1, capacity+1))
+    result = np.zeros((T+1, capacity+1))
+    solution = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+
+    for period in tqdm(range(1, T+1)): 
+        val_temp = np.zeros((T+1, capacity+1))
+        sol_temp = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+        window = int(np.ceil(period**(window_size))) + 1
+        small_t = period-window+1 if period-window+1 > 0 else 1
+        for t in np.arange(small_t, period+1):
+            for x in np.arange(1, capacity+1):
+                if t == period-window+1:
+                    next_less = val_deterministic[t-1][x-1]
+                    next_same = val_deterministic[t-1][x]
+                else: 
+                    next_less = val_temp[t-1][x-1]
+                    next_same = val_temp[t-1][x]
+
+                logic_test_2 = (rewards + next_less > next_same)
+                                
+                q_val = np.where(logic_test_2, rewards + next_less, next_same)
+                val_temp[t][x] = np.sum(np.multiply(probabilities, q_val))
+                sol_temp[t][x] = np.where(logic_test_2, 1, 0)
+
+                if t == period:
+                    value[t][x] = val_temp[t][x]
+                    solution[t][x] = sol_temp[t][x]
+                    value_next[t][x] = val_temp[t-1][x]
+                
+                if t == period-window+1:
+                    value_next[t][x] = val_deterministic[t-1][x]
+        
+        result[period] = value[period]
+            
+    comparison = solution[..., np.newaxis, :] == vectors
+    matches = np.all(comparison, axis=-1)
+    sol_index = np.argmax(matches, axis=-1)
+
+    return result, value, solution, sol_index, value_next
 
 def evaluate_msecretary(val, sol_index, prob_choice, rewards, t, x): 
     #Evaluate approximate solution on the original bellman recursion for the multi-secretary 
