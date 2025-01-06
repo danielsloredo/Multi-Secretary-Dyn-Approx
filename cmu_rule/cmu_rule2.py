@@ -629,15 +629,18 @@ for t in range(0, T+1):
  
 
 '''
-with open('C:/Users/danie/OneDrive/Documents/multisecretary-dyn-approx/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'wb') as pickle_file:
+with open('C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'wb') as pickle_file:
     pickle.dump(val_fluid_queue_2, pickle_file)
 '''
 
 
-with open('C:/Users/danie/OneDrive/Documents/multisecretary-dyn-approx/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'rb') as pickle_file:
+with open('C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'rb') as pickle_file:
     val_fluid_queue_2 = pickle.load(pickle_file)
 
 val_fluid_queue_2_100 = np.copy(val_fluid_queue_2)
+
+
+
 ############################################################################
 ############################################################################
 #Plots for Presentation
@@ -1054,7 +1057,7 @@ plt.show()
 #################
 ## Plots of derivatives of value functions
 #################
-t=100
+t=50
 k1 = 20
 k2 = 20
 
@@ -1078,11 +1081,88 @@ sec_derivative_x_1_dp = np.diff(np.diff(val_dp_queue_2[t], n=1, axis=0), n =1 , 
 sec_derivative_x_1_lookahead = np.diff(np.diff(val_lookahead_2[t], n=1, axis=0), n =1 , axis=0)
 sec_derivative_x_1_eval_lookahead = np.diff(np.diff(val_eval_lookahead_2[t], n=1, axis = 0), n =1 , axis=0)
 
+deriv_diff_dp = derivative_x_1_dp[:, :-1]*.5 - derivative_x_2_dp[:-1, :]*.5
+deriv_diff_fluid = derivative_x_1_fluid[:, :-1]*.5 - derivative_x_2_fluid[:-1, :]*.5
+difference_deriv_diff = deriv_diff_dp - deriv_diff_fluid
+sign_diff_dp = np.sign(deriv_diff_dp)
+sign_diff_fluid = np.sign(deriv_diff_fluid)
+difference_sign_diff = sign_diff_dp - sign_diff_fluid
+
 t2= 100
 derivative_x_2_fluid_100 = np.diff(val_fluid_queue_2_100[t2], n=1, axis=1)
 sec_derivative_x_2_fluid_100 =np.diff(np.diff(val_fluid_queue_2_100[t2], n=1, axis=1), n =1 , axis=1)
 derivative_x_1_fluid_100 = np.diff(val_fluid_queue_2_100[t2], n=1, axis=0)
 sec_derivative_x_1_fluid_100 =np.diff(np.diff(val_fluid_queue_2_100[t2], n=1, axis=0), n =1 , axis=0)
+
+X = 99 
+x1 = np.arange(0, X + 1)
+x2 = np.arange(0, X + 1)
+x1, x2 = np.meshgrid(x1, x2)
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(x1, x2, deriv_diff_dp, cmap='Blues')
+ax.set_xlabel('Q2')
+ax.set_ylabel('Q1')
+ax.set_zlabel('Difference')
+plt.show()
+X = 99 
+x1 = np.arange(0, X + 1)
+x2 = np.arange(0, X + 1)
+x1, x2 = np.meshgrid(x1, x2)
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf2 = ax.plot_surface(x1, x2, deriv_diff_fluid, cmap='Reds')
+ax.set_xlabel('Q2')
+ax.set_ylabel('Q1')
+ax.set_zlabel('Difference')
+plt.show()
+
+X = 99 
+x1 = np.arange(0, X + 1)
+x2 = np.arange(0, X + 1)
+x1, x2 = np.meshgrid(x1, x2)
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(x1, x2, difference_deriv_diff, cmap='Blues')
+ax.set_xlabel('Q2')
+ax.set_ylabel('Q1')
+ax.set_zlabel('Difference')
+plt.show()
+
+X = 99 
+x1 = np.arange(0, X + 1)
+x2 = np.arange(0, X + 1)
+x1, x2 = np.meshgrid(x1, x2)
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(x1, x2, sign_diff_dp, color='Blue')
+ax.set_xlabel('Q2')
+ax.set_ylabel('Q1')
+ax.set_zlabel('Sign')
+plt.show()
+X = 99 
+x1 = np.arange(0, X + 1)
+x2 = np.arange(0, X + 1)
+x1, x2 = np.meshgrid(x1, x2)
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf2 = ax.plot_surface(x1, x2, sign_diff_fluid, color='tab:red')
+ax.set_xlabel('Q2')
+ax.set_ylabel('Q1')
+ax.set_zlabel('Sign')
+plt.show()
+
+X = 99 
+x1 = np.arange(0, X + 1)
+x2 = np.arange(0, X + 1)
+x1, x2 = np.meshgrid(x1, x2)
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(x1, x2, difference_sign_diff, color='Blue')
+ax.set_xlabel('Q2')
+ax.set_ylabel('Q1')
+ax.set_zlabel('Difference')
+plt.show()
 
 plt.figure(figsize=(16,10), dpi= 80)
 plt.plot(derivative_x_2_fluid[k1], color = 'tab:red', label='Deterministic', linestyle = '-', marker = '', fillstyle = 'none')
