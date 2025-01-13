@@ -310,7 +310,7 @@ def dynamic_msecretary_lookahead_3(T, capacity, val_deterministic, window_size, 
                     next_less = val_temp[t-1][x-1]
                     next_same = val_temp[t-1][x]
 
-                logic_test_2 = (rewards + next_less > next_same)
+                logic_test_2 = (rewards + next_less >= next_same)
                                 
                 q_val = np.where(logic_test_2, rewards + next_less, next_same)
                 val_temp[t][x] = np.sum(np.multiply(probabilities, q_val))

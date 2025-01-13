@@ -162,13 +162,13 @@ with open(path_data+'val_eval_lookahead_1.pkl', 'wb') as pickle_file:
         probabilities, 
         rewards)
 
-with open(path_data+'val_lookahead_4_5.pkl', 'wb') as pickle_file:
+with open(path_data+'val_lookahead_4_5_2.pkl', 'wb') as pickle_file:
     pickle.dump(val_lookahead_4_5, pickle_file)
-with open(path_data+'sol_lookahead_4_5.pkl', 'wb') as pickle_file:
+with open(path_data+'sol_lookahead_4_5_2.pkl', 'wb') as pickle_file:
     pickle.dump(sol_lookahead_4_5, pickle_file)
-with open(path_data+'sol_index_lookahead_4_5.pkl', 'wb') as pickle_file:
+with open(path_data+'sol_index_lookahead_4_5_2.pkl', 'wb') as pickle_file:
     pickle.dump(sol_index_lookahead_4_5, pickle_file)
-with open(path_data+'val_eval_lookahead_4_5.pkl', 'wb') as pickle_file:
+with open(path_data+'val_eval_lookahead_4_5_2.pkl', 'wb') as pickle_file:
     pickle.dump(val_eval_lookahead_4_5, pickle_file)
 '''
 
@@ -204,17 +204,28 @@ for horizon in horizons:
         test_differences_1 = .25*(np.diff(val_deterministic[t][:t+1], n=1)-np.diff(val_eval_lookahead_4_5[t][:t+1], n=1))#.25*(np.diff(val_deterministic[t][:t+1], n=1)+val_offline[t][:t]-val_eval_lookahead_4_5[t][1:t+1])
         test_differences_2 = .25*(np.diff(val_eval_lookahead_4_5[t][:t+1], n=1)-np.diff(val_deterministic[t][:t+1], n=1)) #.25*(val_offline[t][1:t+1]-val_eval_lookahead_4_5[t][:t] - np.diff(val_deterministic[t][:t+1], n=1))
         
+        #test_differences_1 = .25*(np.diff(val_deterministic[t-1][:t+1], n=1)-(val_eval_lookahead_4_5[t-1][1:t+1]-val_lookahead_4_5[t-1][:t]))
+        #test_differences_2 = .25*((val_lookahead_4_5[t-1][1:t+1]-val_eval_lookahead_4_5[t-1][:t])-np.diff(val_deterministic[t-1][:t+1], n=1)) 
+
+        #test_differences_1 = .25*(np.diff(val_deterministic[t][:t+1], n=1)-(val_eval_lookahead_4_5[t][1:t+1]+val_eval_lookahead_4_5[t][:t]-val_lookahead_4_5[t][1:t+1]-val_lookahead_4_5[t][:t]))-.6
+        
         if t>3:
             for indx, treshold in enumerate(cumsum[:-1]):
                 test_differences[t] = test_differences_1
                 test_differences[t][int(np.floor(treshold)):int(np.ceil(cumsum[indx+1]))] = test_differences_2[int(np.floor(treshold)):int(np.ceil(cumsum[indx+1]))]
                 test_differences[t][int(np.floor(treshold-.25*window)):int(np.ceil(treshold+.25*window)+1)] = 0
-            test_differences[t][:int(np.floor(cumsum[0]-1.5*.25*window))] = 0
-            test_delta[t] = test_differences[t].max()
+            #test_differences[t][:int(np.floor(.5*.25*window))] = 0
+            #test_differences[t][:int(np.floor(cumsum[0]-.25*window))] = 0
+            test_differences[t][int(np.floor(cumsum[-2]+.25*window)):] = 0
+            test_delta[t] = test_differences[t].max()#np.absolute(test_differences[t]).max() 
     test_bound_2[horizon] = test_delta.sum()
 
 #####################################################################
 ##### Revision plots
+plt.plot(np.diff(np.diff(val_eval_lookahead_4_5[100][:100+1], n=1), n=1), label = 'Heuristic')
+plt.legend()
+plt.show()
+
 plt.plot(np.absolute(val_deterministic[600][1:600+1]-val_deterministic[600][0:600] - (val_dynamic[600][1:600+1]-val_dynamic[600][:600])))
 plt.plot(np.absolute(val_deterministic[600][1:600+1]-val_deterministic[600][0:600] -(val_eval_lookahead_4_5[600][1:600+1]-val_deterministic[600][0:600])))
 plt.show()
@@ -229,8 +240,15 @@ plt.plot(np.diff(val_eval_lookahead_4_5[t][:t+1], n=1), label = 'Heuristic')
 plt.legend()
 plt.show()
 
-plt.plot(val_deterministic[t][:t+1], label= 'DP')
-plt.plot(val_eval_lookahead_4_5[t][:t+1], label = 'Lookahead')
+#plt.plot(np.diff(val_deterministic[100][:100+1], n=1)-np.diff(val_dynamic[100][:100+1], n=1))
+plt.plot(np.maximum(np.diff(val_dynamic[100][:100+1], n=1)-np.diff(val_eval_lookahead_4_5[100][:100+1], n=1), 0))
+plt.show()
+
+#plt.plot(val_dynamic[t][:t+1], label= 'DP')
+#plt.plot(val_dynamic[t+1][:t+1], label = 'DP2')
+plt.plot(val_eval_lookahead_4_5[t][:t+10], label = 'Lookahead')
+plt.plot(val_eval_lookahead_4_5[t+1][:t+10], label = 'Lookahead2')
+plt.legend()
 plt.show()
 
 plt.plot(np.diff(val_dynamic[1000][30:1000+1], n=1)-np.diff(val_eval_lookahead_4_5[1000][30:1000+1], n=1))
@@ -254,7 +272,7 @@ plt.show()
 ########################################################################
 cmap_dict = {0: 'tab:blue', 1: 'lavender', 2: 'tab:orange', 3: 'tab:grey', 4: 'tab:red'}
 cmap = ListedColormap([cmap_dict[i] for i in range(5)])
-df = pd.DataFrame(sol_index_lookahead_4_5[:1000][:1000+1])
+df = pd.DataFrame(sol_index_lookahead_4_5[:100, :100+1])
 df_reversed_cols = df.iloc[:, ::-1]
 plt.figure(figsize=(16,10), dpi= 80)
 sns.heatmap(df_reversed_cols, cmap=cmap, cbar=False, annot=False, linewidths=0.5, alpha=0.6)
@@ -267,6 +285,7 @@ patch_2 = mpatches.Patch(color='tab:orange', label='2 Highest Types')
 patch_3 = mpatches.Patch(color='tab:grey', label='3 Highest Types')
 patch_4 = mpatches.Patch(color='tab:red', label='All Types')
 plt.legend(handles=[patch_0, patch_1, patch_2, patch_3, patch_4], loc='upper left', bbox_to_anchor=(1.12, 1))
+plt.show()
 plt.savefig(path_0+'action_map_2_3.png')
 
 
