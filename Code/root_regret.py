@@ -177,9 +177,9 @@ test_differences_value = {}
 test_bound_3 = {}
 for horizon in horizons:
     #regret[horizon] = np.max(val_offline[horizon]-val_eval_lookahead[horizon][horizon][:horizon+1])
-    #regret_opt[horizon] = np.max(val_offline[horizon]-val_dynamic[horizon][:horizon+1])
-    #sub_opt_gap[horizon] = np.max(val_dynamic[horizon][:horizon+1]-val_eval_lookahead_t[horizon][:horizon+1])
-    sub_opt_gap[horizon] = np.max(val_dynamic[horizon][:horizon+1]-val_eval_lookahead_4_5[horizon][:horizon+1])
+    #regret_opt[horizon] = np.max(val_offline[horizon]-val_dynamic[horizon, :horizon+1])
+    #sub_opt_gap[horizon] = np.max(val_dynamic[horizon, :horizon+1]-val_eval_lookahead_t[horizon, :horizon+1])
+    sub_opt_gap[horizon] = np.max(val_dynamic[horizon, :horizon+1]-val_eval_lookahead_4_5[horizon, :horizon+1])
     
     test_delta = np.zeros(horizon+1)
     test_differences = {}
@@ -187,7 +187,7 @@ for horizon in horizons:
         window = int(np.ceil(t**(window_size)))+1
         restriction = np.multiply(probabilities[::-1], t)
         cumsum = np.cumsum(restriction)
-        test_differences[t] = .25*(np.diff(val_deterministic[t][:t+1], n=1)-np.diff(val_dynamic[t][:t+1], n=1))
+        test_differences[t] = .25*(np.diff(val_deterministic[t, :t+1], n=1)-np.diff(val_dynamic[t, :t+1], n=1))
         for indx, treshold in enumerate(cumsum[:-1]):
             test_differences[t][int(np.floor(treshold-.25*window)):int(np.ceil(treshold+.25*window))+1] = 0
         test_delta[t] = np.absolute(test_differences[t]).max()
@@ -201,13 +201,13 @@ for horizon in horizons:
         window = int(np.floor(t**(window_size)))+1
         restriction = np.multiply(probabilities[::-1], t)
         cumsum = np.cumsum(restriction)
-        test_differences_1 = .25*(np.diff(val_deterministic[t][:t+1], n=1)-np.diff(val_eval_lookahead_4_5[t][:t+1], n=1))#.25*(np.diff(val_deterministic[t][:t+1], n=1)+val_offline[t][:t]-val_eval_lookahead_4_5[t][1:t+1])
-        test_differences_2 = .25*(np.diff(val_eval_lookahead_4_5[t][:t+1], n=1)-np.diff(val_deterministic[t][:t+1], n=1)) #.25*(val_offline[t][1:t+1]-val_eval_lookahead_4_5[t][:t] - np.diff(val_deterministic[t][:t+1], n=1))
+        test_differences_1 = .25*(np.diff(val_deterministic[t, :t+1], n=1)-np.diff(val_eval_lookahead_4_5[t, :t+1], n=1))#.25*(np.diff(val_deterministic[t, :t+1], n=1)+val_offline[t, :t]-val_eval_lookahead_4_5[t, 1:t+1])
+        test_differences_2 = .25*(np.diff(val_eval_lookahead_4_5[t, :t+1], n=1)-np.diff(val_deterministic[t, :t+1], n=1)) #.25*(val_offline[t, 1:t+1]-val_eval_lookahead_4_5[t, :t] - np.diff(val_deterministic[t, :t+1], n=1))
         
-        #test_differences_1 = .25*(np.diff(val_deterministic[t-1][:t+1], n=1)-(val_eval_lookahead_4_5[t-1][1:t+1]-val_lookahead_4_5[t-1][:t]))
-        #test_differences_2 = .25*((val_lookahead_4_5[t-1][1:t+1]-val_eval_lookahead_4_5[t-1][:t])-np.diff(val_deterministic[t-1][:t+1], n=1)) 
+        #test_differences_1 = .25*(np.diff(val_deterministic[t-1, :t+1], n=1)-(val_eval_lookahead_4_5[t-1, 1:t+1]-val_lookahead_4_5[t-1, :t]))
+        #test_differences_2 = .25*((val_lookahead_4_5[t-1, 1:t+1]-val_eval_lookahead_4_5[t-1, :t])-np.diff(val_deterministic[t-1, :t+1], n=1)) 
 
-        #test_differences_1 = .25*(np.diff(val_deterministic[t][:t+1], n=1)-(val_eval_lookahead_4_5[t][1:t+1]+val_eval_lookahead_4_5[t][:t]-val_lookahead_4_5[t][1:t+1]-val_lookahead_4_5[t][:t]))-.6
+        #test_differences_1 = .25*(np.diff(val_deterministic[t, :t+1], n=1)-(val_eval_lookahead_4_5[t, 1:t+1]+val_eval_lookahead_4_5[t, :t]-val_lookahead_4_5[t, 1:t+1]-val_lookahead_4_5[t, :t]))-.6
         
         if t>3:
             for indx, treshold in enumerate(cumsum[:-1]):

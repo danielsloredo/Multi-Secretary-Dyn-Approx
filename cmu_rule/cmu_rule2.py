@@ -33,7 +33,7 @@ def fluid_queue_array(probabilities, costs, T, X):
         for x1 in range(0, X+1):
             for x2 in range(0, X+1):
                 cost = fluid_queue(probabilities, costs, t, np.array([x1, x2]))
-                val_fluid[t][x1][x2] = cost
+                val_fluid[t, x1, x2] = cost
     return val_fluid
 
 def dynamic_queue(T, X, probabilities, costs):
@@ -44,36 +44,36 @@ def dynamic_queue(T, X, probabilities, costs):
         for x1 in np.arange(0, X+1):
             for x2 in np.arange(0, X+1):
                 if t == 0:
-                    val[t][x1][x2] = np.dot(costs, np.array([x1, x2]))
+                    val[t, x1, x2] = np.dot(costs, np.array([x1, x2]))
                 elif x1 == 0:
                     if x2==0:
-                        val[t][x1][x2] = 0
+                        val[t, x1, x2] = 0
                     else:
-                        next_less_2 = val[t-1][x1][x2-1]
-                        next_same = val[t-1][x1][x2]
+                        next_less_2 = val[t-1, x1, x2-1]
+                        next_same = val[t-1, x1, x2]
                         current_cost = costs[1]*x2
-                        val[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                        val[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
                 elif x2 == 0:
                     if x1==0:
-                        val[t][x1][x2] = 0
+                        val[t, x1, x2] = 0
                     else:
-                        next_less_1 = val[t-1][x1-1][x2]
-                        next_same = val[t-1][x1][x2]
+                        next_less_1 = val[t-1, x1-1, x2]
+                        next_same = val[t-1, x1, x2]
                         current_cost = costs[0]*x1
-                        val[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                        val[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
                 else:   
-                    next_less_1 = val[t-1][x1-1][x2]
-                    next_less_2 = val[t-1][x1][x2-1]
-                    next_same = val[t-1][x1][x2]
+                    next_less_1 = val[t-1, x1-1, x2]
+                    next_less_2 = val[t-1, x1, x2-1]
+                    next_same = val[t-1, x1, x2]
                     current_cost = np.dot(costs, np.array([x1, x2]))
 
                     logic_test = (current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same <= current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same) 
                     if logic_test:
-                        val[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                        sol[t][x1][x2] = 1
+                        val[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                        sol[t, x1, x2] = 1
                     else:
-                        val[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                        sol[t][x1][x2] = 0
+                        val[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                        sol[t, x1, x2] = 0
 
     return val, sol
 
@@ -87,63 +87,63 @@ def dynamic_lookahead(T, X, val_deterministic, window_size, probabilities, costs
         window = int(np.ceil(period**(window_size))) + 1
         for x1 in np.arange(0, X+1):
             for x2 in np.arange(0, X+1):
-                val_temp[0][x1][x2] = np.dot(costs, np.array([x1, x2]))
+                val_temp[0, x1, x2] = np.dot(costs, np.array([x1, x2]))
         small_t = period-window+1 if period-window > 0 else 1
         for t in np.arange(small_t, period+1):
             for x1 in np.arange(0, X+1):
                 for x2 in np.arange(0, X+1):
                     if t == 0:
-                        val_temp[t][x1][x2] = np.dot(costs, np.array([x1, x2]))
+                        val_temp[t, x1, x2] = np.dot(costs, np.array([x1, x2]))
                     elif x1 == 0:
                         if x2==0:
-                            val_temp[t][x1][x2] = 0
+                            val_temp[t, x1, x2] = 0
                         else:
                             if t == period-window+1:
-                                next_less_2 = val_deterministic[t-1][x1][x2-1]
-                                next_same = val_deterministic[t-1][x1][x2]
+                                next_less_2 = val_deterministic[t-1, x1, x2-1]
+                                next_same = val_deterministic[t-1, x1, x2]
                             else:
-                                next_less_2 = val_temp[t-1][x1][x2-1]
-                                next_same = val_temp[t-1][x1][x2]
+                                next_less_2 = val_temp[t-1, x1, x2-1]
+                                next_same = val_temp[t-1, x1, x2]
                             current_cost = costs[1]*x2
-                            val_temp[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                            val_temp[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
                             #sol_temp[t][x1][x2] = 0
                     elif x2 == 0:
                         if x1==0:
-                            val_temp[t][x1][x2] = 0
+                            val_temp[t, x1, x2] = 0
                         else:
                             if t == period-window+1:
-                                next_less_1 = val_deterministic[t-1][x1-1][x2]
-                                next_same = val_deterministic[t-1][x1][x2]
+                                next_less_1 = val_deterministic[t-1, x1-1, x2]
+                                next_same = val_deterministic[t-1, x1, x2]
                             else:
-                                next_less_1 = val_temp[t-1][x1-1][x2]
-                                next_same = val_temp[t-1][x1][x2]
+                                next_less_1 = val_temp[t-1, x1-1, x2]
+                                next_same = val_temp[t-1, x1, x2]
                             current_cost = costs[0]*x1
-                            val_temp[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                            val_temp[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
                             #sol_temp[t][x1][x2] = 1
                     else:
                         if t == period-window+1:
-                            next_less_1 = val_deterministic[t-1][x1-1][x2]
-                            next_less_2 = val_deterministic[t-1][x1][x2-1]
-                            next_same = val_deterministic[t-1][x1][x2]
+                            next_less_1 = val_deterministic[t-1, x1-1, x2]
+                            next_less_2 = val_deterministic[t-1, x1, x2-1]
+                            next_same = val_deterministic[t-1, x1, x2]
                         else: 
-                            next_less_1 = val_temp[t-1][x1-1][x2]
-                            next_less_2 = val_temp[t-1][x1][x2-1]
-                            next_same = val_temp[t-1][x1][x2]
+                            next_less_1 = val_temp[t-1, x1-1, x2]
+                            next_less_2 = val_temp[t-1, x1, x2-1]
+                            next_same = val_temp[t-1, x1, x2]
                         
                         current_cost = np.dot(costs, np.array([x1, x2]))
 
                         logic_test = (current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same < current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same) 
                         
                         if logic_test:
-                            val_temp[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                            sol_temp[t][x1][x2] = 1
+                            val_temp[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                            sol_temp[t, x1, x2] = 1
                         else:
-                            val_temp[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                            sol_temp[t][x1][x2] = 0
+                            val_temp[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                            sol_temp[t, x1, x2] = 0
 
                     if t == period:
-                        value[t][x1][x2] = val_temp[t][x1][x2]
-                        solution[t][x1][x2] = sol_temp[t][x1][x2]
+                        value[t, x1, x2] = val_temp[t, x1, x2]
+                        solution[t, x1, x2] = sol_temp[t, x1, x2]
 
     return value, solution
 
@@ -154,33 +154,33 @@ def dynamic_evaluate_solution(T, X, sol, probabilities, costs):
         for x1 in np.arange(0, X+1):
             for x2 in np.arange(0, X+1):
                 if t == 0:
-                    value[t][x1][x2] = np.dot(costs, np.array([x1, x2]))
+                    value[t, x1, x2] = np.dot(costs, np.array([x1, x2]))
                 elif x1 == 0:
                     if x2==0:
-                        value[t][x1][x2] = 0
+                        value[t, x1, x2] = 0
                     else:
-                        next_less_2 = value[t-1][x1][x2-1]
-                        next_same = value[t-1][x1][x2]
+                        next_less_2 = value[t-1, x1, x2-1]
+                        next_same = value[t-1, x1, x2]
                         current_cost = costs[1]*x2
-                        value[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                        value[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
                             
                 elif x2 == 0:
                     if x1==0:
-                        value[t][x1][x2] = 0
+                        value[t, x1, x2] = 0
                     else:
-                        next_less_1 = value[t-1][x1-1][x2]
-                        next_same = value[t-1][x1][x2]
+                        next_less_1 = value[t-1, x1-1, x2]
+                        next_same = value[t-1, x1, x2]
                         current_cost = costs[0]*x1
-                        value[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                        value[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
                 else:        
-                    next_less_1 = value[t-1][x1-1][x2]
-                    next_less_2 = value[t-1][x1][x2-1]
-                    next_same = value[t-1][x1][x2]
+                    next_less_1 = value[t-1, x1-1, x2]
+                    next_less_2 = value[t-1, x1, x2-1]
+                    next_same = value[t-1, x1, x2]
                     current_cost = np.dot(costs, np.array([x1, x2]))
-                    if sol[t][x1][x2] == 1:
-                        value[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                    if sol[t, x1, x2] == 1:
+                        value[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
                     else:
-                        value[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same        
+                        value[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same        
 
     return value
 
@@ -220,7 +220,7 @@ def fluid_queue_array_quadratic(probabilities, costs, T, X, all = True):
                     cost = 0
                 else:
                   cost = fluid_queue_quadratic(probabilities, costs, t, np.array([x1, x2]))
-                  val_fluid[t][x1][x2] = cost
+                  val_fluid[t, x1, x2] = cost
     return val_fluid
 
 def dynamic_queue_quadratic(T, X, probabilities, costs):
@@ -231,37 +231,37 @@ def dynamic_queue_quadratic(T, X, probabilities, costs):
         for x1 in np.arange(0, X+1):
             for x2 in np.arange(0, X+1):
                 if t == 0:
-                    val[t][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]), 2))
+                    val[t, x1, x2] = np.dot(costs, np.power(np.array([x1, x2]), 2))
                 elif x1 == 0:
                     if x2==0:
-                        val[t][x1][x2] = 0
+                        val[t, x1, x2] = 0
                     else:
-                        next_less_2 = val[t-1][x1][x2-1]
-                        next_same = val[t-1][x1][x2]
+                        next_less_2 = val[t-1, x1, x2-1]
+                        next_same = val[t-1, x1, x2]
                         current_cost = costs[1]*x2**2
-                        val[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                        val[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
                 elif x2 == 0:
                     if x1==0:
-                        val[t][x1][x2] = 0
+                        val[t, x1, x2] = 0
                     else:
-                        next_less_1 = val[t-1][x1-1][x2]
-                        next_same = val[t-1][x1][x2]
+                        next_less_1 = val[t-1, x1-1, x2]
+                        next_same = val[t-1, x1, x2]
                         current_cost = costs[0]*x1**2
-                        val[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                        sol[t][x1][x2] = 1
+                        val[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                        sol[t, x1, x2] = 1
                 else:   
-                    next_less_1 = val[t-1][x1-1][x2]
-                    next_less_2 = val[t-1][x1][x2-1]
-                    next_same = val[t-1][x1][x2]
+                    next_less_1 = val[t-1, x1-1, x2]
+                    next_less_2 = val[t-1, x1, x2-1]
+                    next_same = val[t-1, x1, x2]
                     current_cost = np.dot(costs, np.power(np.array([x1, x2]), 2))
 
                     logic_test = (current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same <= current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same) 
                     if logic_test:
-                        val[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                        sol[t][x1][x2] = 1
+                        val[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                        sol[t, x1, x2] = 1
                     else:
-                        val[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                        sol[t][x1][x2] = 0
+                        val[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                        sol[t, x1, x2] = 0
 
     return val, sol
 
@@ -275,63 +275,63 @@ def dynamic_lookahead_quadratic(T, X, val_deterministic, window_size, probabilit
         window = 2#int(np.ceil(period**(window_size))) + 1
         for x1 in np.arange(0, X+1):
             for x2 in np.arange(0, X+1):
-                val_temp[0][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
+                val_temp[0, x1, x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
         small_t = period-window+1 if period-window > 0 else 1
         for t in np.arange(small_t, period+1):
             for x1 in np.arange(0, X+1):
                 for x2 in np.arange(0, X+1):
                     if t == 0:
-                        val_temp[t][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
+                        val_temp[t, x1, x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
                     elif x1 == 0:
                         if x2==0:
-                            val_temp[t][x1][x2] = 0
+                            val_temp[t, x1, x2] = 0
                         else:
                             if t == period-window+1:
-                                next_less_2 = val_deterministic[t-1][x1][x2-1]
-                                next_same = val_deterministic[t-1][x1][x2]
+                                next_less_2 = val_deterministic[t-1, x1, x2-1]
+                                next_same = val_deterministic[t-1, x1, x2]
                             else:
-                                next_less_2 = val_temp[t-1][x1][x2-1]
-                                next_same = val_temp[t-1][x1][x2]
+                                next_less_2 = val_temp[t-1, x1, x2-1]
+                                next_same = val_temp[t-1, x1, x2]
                             current_cost = costs[1]*x2**2
-                            val_temp[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                            val_temp[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
                             #sol_temp[t][x1][x2] = 0
                     elif x2 == 0:
                         if x1==0:
-                            val_temp[t][x1][x2] = 0
+                            val_temp[t, x1, x2] = 0
                         else:
                             if t == period-window+1:
-                                next_less_1 = val_deterministic[t-1][x1-1][x2]
-                                next_same = val_deterministic[t-1][x1][x2]
+                                next_less_1 = val_deterministic[t-1, x1-1, x2]
+                                next_same = val_deterministic[t-1, x1, x2]
                             else:
-                                next_less_1 = val_temp[t-1][x1-1][x2]
-                                next_same = val_temp[t-1][x1][x2]
+                                next_less_1 = val_temp[t-1, x1-1, x2]
+                                next_same = val_temp[t-1, x1, x2]
                             current_cost = costs[0]*x1**2
-                            val_temp[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                            sol_temp[t][x1][x2] = 1
+                            val_temp[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                            sol_temp[t, x1, x2] = 1
                     else:
                         if t == period-window+1:
-                            next_less_1 = val_deterministic[t-1][x1-1][x2]
-                            next_less_2 = val_deterministic[t-1][x1][x2-1]
-                            next_same = val_deterministic[t-1][x1][x2]
+                            next_less_1 = val_deterministic[t-1, x1-1, x2]
+                            next_less_2 = val_deterministic[t-1, x1, x2-1]
+                            next_same = val_deterministic[t-1, x1, x2]
                         else: 
-                            next_less_1 = val_temp[t-1][x1-1][x2]
-                            next_less_2 = val_temp[t-1][x1][x2-1]
-                            next_same = val_temp[t-1][x1][x2]
+                            next_less_1 = val_temp[t-1, x1-1, x2]
+                            next_less_2 = val_temp[t-1, x1, x2-1]
+                            next_same = val_temp[t-1, x1, x2]
                         
                         current_cost = np.dot(costs, np.power(np.array([x1, x2]),2))
 
                         logic_test = (current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same < current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same) 
                         
                         if logic_test:
-                            val_temp[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                            sol_temp[t][x1][x2] = 1
+                            val_temp[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                            sol_temp[t, x1, x2] = 1
                         else:
-                            val_temp[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                            sol_temp[t][x1][x2] = 0
+                            val_temp[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                            sol_temp[t, x1, x2] = 0
 
                     if t == period:
-                        value[t][x1][x2] = val_temp[t][x1][x2]
-                        solution[t][x1][x2] = sol_temp[t][x1][x2]
+                        value[t, x1, x2] = val_temp[t, x1, x2]
+                        solution[t, x1, x2] = sol_temp[t, x1, x2]
 
     return value, solution
 
@@ -342,33 +342,33 @@ def dynamic_evaluate_solution_quadratic(T, X, sol, probabilities, costs):
         for x1 in np.arange(0, X+1):
             for x2 in np.arange(0, X+1):
                 if t == 0:
-                    value[t][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
+                    value[t, x1, x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
                 elif x1 == 0:
                     if x2==0:
-                        value[t][x1][x2] = 0
+                        value[t, x1, x2] = 0
                     else:
-                        next_less_2 = value[t-1][x1][x2-1]
-                        next_same = value[t-1][x1][x2]
+                        next_less_2 = value[t-1, x1, x2-1]
+                        next_same = value[t-1, x1, x2]
                         current_cost = costs[1]*x2**2
-                        value[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
+                        value[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
                             
                 elif x2 == 0:
                     if x1==0:
-                        value[t][x1][x2] = 0
+                        value[t, x1, x2] = 0
                     else:
-                        next_less_1 = value[t-1][x1-1][x2]
-                        next_same = value[t-1][x1][x2]
+                        next_less_1 = value[t-1, x1-1, x2]
+                        next_same = value[t-1, x1, x2]
                         current_cost = costs[0]*x1**2
-                        value[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                        value[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
                 else:        
-                    next_less_1 = value[t-1][x1-1][x2]
-                    next_less_2 = value[t-1][x1][x2-1]
-                    next_same = value[t-1][x1][x2]
+                    next_less_1 = value[t-1, x1-1, x2]
+                    next_less_2 = value[t-1, x1, x2-1]
+                    next_same = value[t-1, x1, x2]
                     current_cost = np.dot(costs, np.power(np.array([x1, x2]),2))
-                    if sol[t][x1][x2] == 1:
-                        value[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
+                    if sol[t, x1, x2] == 1:
+                        value[t, x1, x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
                     else:
-                        value[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same        
+                        value[t, x1, x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same        
     return value
 
 ####################################################
@@ -485,113 +485,6 @@ def dynamic_queue_3types(T, X, probabilities, costs):
 
     return val, sol
 
-def dynamic_lookahead_quadratic(T, X, val_deterministic, window_size, probabilities, costs):
-    value = np.zeros((T+1, X+1, X+1))
-    solution = np.zeros((T+1, X+1, X+1), dtype=int)
-
-    for period in tqdm(range(0, T+1)): 
-        val_temp = np.zeros((T+1, X+1, X+1))
-        sol_temp = np.zeros((T+1, X+1, X+1), dtype=int)
-        window = 2#int(np.ceil(period**(window_size))) + 1
-        for x1 in np.arange(0, X+1):
-            for x2 in np.arange(0, X+1):
-                val_temp[0][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
-        small_t = period-window+1 if period-window > 0 else 1
-        for t in np.arange(small_t, period+1):
-            for x1 in np.arange(0, X+1):
-                for x2 in np.arange(0, X+1):
-                    if t == 0:
-                        val_temp[t][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
-                    elif x1 == 0:
-                        if x2==0:
-                            val_temp[t][x1][x2] = 0
-                        else:
-                            if t == period-window+1:
-                                next_less_2 = val_deterministic[t-1][x1][x2-1]
-                                next_same = val_deterministic[t-1][x1][x2]
-                            else:
-                                next_less_2 = val_temp[t-1][x1][x2-1]
-                                next_same = val_temp[t-1][x1][x2]
-                            current_cost = costs[1]*x2**2
-                            val_temp[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                            #sol_temp[t][x1][x2] = 0
-                    elif x2 == 0:
-                        if x1==0:
-                            val_temp[t][x1][x2] = 0
-                        else:
-                            if t == period-window+1:
-                                next_less_1 = val_deterministic[t-1][x1-1][x2]
-                                next_same = val_deterministic[t-1][x1][x2]
-                            else:
-                                next_less_1 = val_temp[t-1][x1-1][x2]
-                                next_same = val_temp[t-1][x1][x2]
-                            current_cost = costs[0]*x1**2
-                            val_temp[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                            sol_temp[t][x1][x2] = 1
-                    else:
-                        if t == period-window+1:
-                            next_less_1 = val_deterministic[t-1][x1-1][x2]
-                            next_less_2 = val_deterministic[t-1][x1][x2-1]
-                            next_same = val_deterministic[t-1][x1][x2]
-                        else: 
-                            next_less_1 = val_temp[t-1][x1-1][x2]
-                            next_less_2 = val_temp[t-1][x1][x2-1]
-                            next_same = val_temp[t-1][x1][x2]
-                        
-                        current_cost = np.dot(costs, np.power(np.array([x1, x2]),2))
-
-                        logic_test = (current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same < current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same) 
-                        
-                        if logic_test:
-                            val_temp[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                            sol_temp[t][x1][x2] = 1
-                        else:
-                            val_temp[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                            sol_temp[t][x1][x2] = 0
-
-                    if t == period:
-                        value[t][x1][x2] = val_temp[t][x1][x2]
-                        solution[t][x1][x2] = sol_temp[t][x1][x2]
-
-    return value, solution
-
-def dynamic_evaluate_solution_quadratic(T, X, sol, probabilities, costs):
-    value = np.zeros((T+1, X+1, X+1))
-    
-    for t in np.arange(0, T+1):
-        for x1 in np.arange(0, X+1):
-            for x2 in np.arange(0, X+1):
-                if t == 0:
-                    value[t][x1][x2] = np.dot(costs, np.power(np.array([x1, x2]),2))
-                elif x1 == 0:
-                    if x2==0:
-                        value[t][x1][x2] = 0
-                    else:
-                        next_less_2 = value[t-1][x1][x2-1]
-                        next_same = value[t-1][x1][x2]
-                        current_cost = costs[1]*x2**2
-                        value[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same
-                            
-                elif x2 == 0:
-                    if x1==0:
-                        value[t][x1][x2] = 0
-                    else:
-                        next_less_1 = value[t-1][x1-1][x2]
-                        next_same = value[t-1][x1][x2]
-                        current_cost = costs[0]*x1**2
-                        value[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                else:        
-                    next_less_1 = value[t-1][x1-1][x2]
-                    next_less_2 = value[t-1][x1][x2-1]
-                    next_same = value[t-1][x1][x2]
-                    current_cost = np.dot(costs, np.power(np.array([x1, x2]),2))
-                    if sol[t][x1][x2] == 1:
-                        value[t][x1][x2] = current_cost + probabilities[0]*next_less_1+(1-probabilities[0])*next_same
-                    else:
-                        value[t][x1][x2] = current_cost + probabilities[1]*next_less_2+(1-probabilities[1])*next_same        
-    return value
-
-
 
 ############################################################################
 ############################################################################
@@ -619,6 +512,8 @@ T = 50
 X = 100
 window_size = 2/3
 
+with open('C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'rb') as pickle_file:
+    val_fluid_queue_2 = pickle.load(pickle_file)
 #val_fluid_queue_2 = fluid_queue_array_quadratic(probabilities, costs, T, X, all = False)
 val_dp_queue_2, sol_dp_queue_2 = dynamic_queue_quadratic(T, X, probabilities, costs)
 val_lookahead_2, sol_lookahead_2 = dynamic_lookahead_quadratic(T, X, val_fluid_queue_2, window_size, probabilities, costs)
@@ -632,10 +527,6 @@ for t in range(0, T+1):
 with open('C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'wb') as pickle_file:
     pickle.dump(val_fluid_queue_2, pickle_file)
 '''
-
-
-with open('C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/cmu_rule/val_fluid_queue_2.pkl', 'rb') as pickle_file:
-    val_fluid_queue_2 = pickle.load(pickle_file)
 
 val_fluid_queue_2_100 = np.copy(val_fluid_queue_2)
 
