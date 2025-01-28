@@ -375,6 +375,41 @@ def dynamic_evaluate_solution(T, capacity, sol, probabilities, rewards):
     return result, val
 
 
+def dynamic_msecretary_lookahead_batched(T, capacity, val_deterministic, window_size, probabilities, rewards, vectors):
+    
+    intervals = np.arange(T, 0, -window_size)
+
+    value = np.zeros((T+1, capacity+1))
+    solution = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+
+    for interval in intervals: 
+        val_temp = np.zeros((T+1, capacity+1))
+        sol_temp = np.zeros((T+1, capacity+1, rewards.shape[0]), dtype=int)
+        small_t = interval-window_size*2+1 if interval-window_size*2+1 > 0 else 1
+        for t in np.arange(small_t, interval+1):
+            for x in np.arange(1, capacity+1):
+                if t == small_t:
+                    next_less = val_deterministic[t-1, x-1]
+                    next_same = val_deterministic[t-1, x]
+                else: 
+                    next_less = val_temp[t-1, x-1]
+                    next_same = val_temp[t-1, x]
+
+                logic_test_2 = (rewards + next_less >= next_same)               
+                q_val = np.where(logic_test_2, rewards + next_less, next_same)
+                val_temp[t, x] = np.sum(np.multiply(probabilities, q_val))
+                sol_temp[t, x] = np.where(logic_test_2, 1, 0)
+                if t >= np.maximum(interval-window_size, 0):
+                    value[t, x] = val_temp[t, x]
+                    solution[t, x] = sol_temp[t, x]
+            
+    comparison = solution[..., np.newaxis, :] == vectors
+    matches = np.all(comparison, axis=-1)
+    sol_index = np.argmax(matches, axis=-1)
+
+    return value, solution, sol_index
+
+
 if __name__ == '__main__':
     
     ######## This are global variables

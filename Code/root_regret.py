@@ -19,23 +19,17 @@ n_types = 4
 #capacity = 100 #capacity upper bound
 #T = 100 #Total time of observation
 probabilities = np.array([.25, .25, .25, .25])#np.array([.5, .5]) 
-rewards = np.array([.5, 1, 1.5, 2])# np.array([1, 2]) #
+rewards = 100*np.array([.5, 1, 1.5, 2])# np.array([1, 2]) #
 
 vectors = ms.generate_vectors(n_types)
 prob_choice = vectors * probabilities #p_i * u_i where u_i are binary variables.
 
 n_sims = 5
 horizons = [10, 50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000]
-window_size = 4/5
-window_size_str = '4_5'
-window = {i: int(np.ceil(i**(4/5)))+1 for i in horizons}
+window_size = 2/3
+window_size_str = '2_3'
+window = {i: int(i**(window_size))+1 for i in horizons}
 ########
-regret = {}
-regret_opt = {}
-val_offline = {}
-sub_opt_gap = {}
-
-
 result_lookahead = {}
 val_lookahead = {}
 sol_lookahead = {}
@@ -84,6 +78,15 @@ with open(path_data+'sol_index_lookahead_4_5.pkl', 'rb') as pickle_file:
     sol_index_lookahead_4_5 = pickle.load(pickle_file)
 with open(path_data+'val_eval_lookahead_4_5.pkl', 'rb') as pickle_file:
     val_eval_lookahead_4_5 = pickle.load(pickle_file)
+
+with open(path_data+'val_lookahead_4_5_2.pkl', 'rb') as pickle_file:
+    val_lookahead_4_5_2 = pickle.load(pickle_file)
+with open(path_data+'sol_lookahead_4_5_2.pkl', 'rb') as pickle_file:
+    sol_lookahead_4_5_2 = pickle.load(pickle_file)
+with open(path_data+'sol_index_lookahead_4_5_2.pkl', 'rb') as pickle_file:
+    sol_index_lookahead_4_5_2 = pickle.load(pickle_file)
+with open(path_data+'val_eval_lookahead_4_5_2.pkl', 'rb') as pickle_file:
+    val_eval_lookahead_4_5_2 = pickle.load(pickle_file)
 
 with open(path_data+'val_lookahead_2.pkl', 'rb') as pickle_file:
     val_lookahead = pickle.load(pickle_file)
@@ -171,15 +174,71 @@ with open(path_data+'sol_index_lookahead_4_5_2.pkl', 'wb') as pickle_file:
 with open(path_data+'val_eval_lookahead_4_5_2.pkl', 'wb') as pickle_file:
     pickle.dump(val_eval_lookahead_4_5, pickle_file)
 '''
+### Batched Lookahead 
+result_lookahead_batched = {}
+val_lookahead_batched = {}
+sol_lookahead_batched = {}
+sol_index_lookahead_batched = {}
+result_eval_lookahead_batched = {}
+val_eval_lookahead_batched = {}
 
-test_bound = {}
+for horizon in tqdm(horizons):
+    capacity = horizon
+    (val_lookahead_batched[horizon], 
+        sol_lookahead_batched[horizon], 
+        sol_index_lookahead_batched[horizon]) = ms.dynamic_msecretary_lookahead_batched(
+            horizon, 
+            capacity, 
+            val_deterministic, 
+            window[horizon], 
+            probabilities, 
+            rewards, 
+            vectors)
+    (result_eval_lookahead_batched[horizon], 
+        val_eval_lookahead_batched[horizon]) = ms.dynamic_evaluate_solution(
+            horizon, 
+            capacity, 
+            sol_lookahead_batched[horizon], 
+            probabilities, 
+            rewards)
+
+
+###################################################################
+#Deviation compensation
+
+def deviation_compensation(t, x, sol, probabilities, rewards, value_function):
+    next_less = value_function[t-1, x-1]
+    next_same = value_function[t-1, x]
+    logic_test = sol[t, x] > 0 
+    #logic_test = (rewards + next_less >= next_same)
+    q_val = np.where(logic_test, rewards + next_less, next_same)
+    compensation = value_function[t,x] - np.sum(np.multiply(probabilities, q_val))
+    return compensation
+
+###################################################################
+#Bounds
+regret = {}
+regret_opt = {}
+val_offline = {}
+sub_opt_gap = {}
+
+
 test_differences_value = {}
+test_bound = {}
+
 test_bound_3 = {}
+
+window_size = 4/5
+window = {i: int(i**(window_size))+1 for i in horizons}
+
+val_eval_lookahead_bounds = np.copy(val_eval_lookahead_4_5)
+val_lookahead_bounds = np.copy(val_lookahead_4_5)
+sol_lookahead_bounds = np.copy(sol_lookahead_4_5)
+
 for horizon in horizons:
-    #regret[horizon] = np.max(val_offline[horizon]-val_eval_lookahead[horizon][horizon][:horizon+1])
+    #regret[horizon] = np.max(val_offline[horizon]-val_eval_lookahead_bounds[horizon][horizon][:horizon+1])
     #regret_opt[horizon] = np.max(val_offline[horizon]-val_dynamic[horizon, :horizon+1])
-    #sub_opt_gap[horizon] = np.max(val_dynamic[horizon, :horizon+1]-val_eval_lookahead_t[horizon, :horizon+1])
-    sub_opt_gap[horizon] = np.max(val_dynamic[horizon, :horizon+1]-val_eval_lookahead_4_5[horizon, :horizon+1])
+    sub_opt_gap[horizon] = np.max(val_dynamic[horizon, :horizon+1]-val_eval_lookahead_bounds[horizon, :horizon+1])
     
     test_delta = np.zeros(horizon+1)
     test_differences = {}
@@ -193,7 +252,7 @@ for horizon in horizons:
         test_delta[t] = np.absolute(test_differences[t]).max()
     test_bound_3[horizon] = test_delta.sum()
 
-test_bound_2 = {}
+
 for horizon in horizons:
     test_delta = np.zeros(horizon+1)
     test_differences = {}
@@ -201,24 +260,78 @@ for horizon in horizons:
         window = int(np.floor(t**(window_size)))+1
         restriction = np.multiply(probabilities[::-1], t)
         cumsum = np.cumsum(restriction)
-        test_differences_1 = .25*(np.diff(val_deterministic[t, :t+1], n=1)-np.diff(val_eval_lookahead_4_5[t, :t+1], n=1))#.25*(np.diff(val_deterministic[t, :t+1], n=1)+val_offline[t, :t]-val_eval_lookahead_4_5[t, 1:t+1])
-        test_differences_2 = .25*(np.diff(val_eval_lookahead_4_5[t, :t+1], n=1)-np.diff(val_deterministic[t, :t+1], n=1)) #.25*(val_offline[t, 1:t+1]-val_eval_lookahead_4_5[t, :t] - np.diff(val_deterministic[t, :t+1], n=1))
-        
+        test_differences_1 = .25*(np.diff(val_deterministic[t, :t+1], n=1)-np.diff(val_eval_lookahead_bounds[t, :t+1], n=1))#.25*(np.diff(val_deterministic[t, :t+1], n=1)+val_offline[t, :t]-val_eval_lookahead_4_5[t, 1:t+1])
+        test_differences_2 = .25*(np.diff(val_eval_lookahead_bounds[t, :t+1], n=1)-np.diff(val_deterministic[t, :t+1], n=1)) #.25*(val_offline[t, 1:t+1]-val_eval_lookahead_4_5[t, :t] - np.diff(val_deterministic[t, :t+1], n=1))
         #test_differences_1 = .25*(np.diff(val_deterministic[t-1, :t+1], n=1)-(val_eval_lookahead_4_5[t-1, 1:t+1]-val_lookahead_4_5[t-1, :t]))
         #test_differences_2 = .25*((val_lookahead_4_5[t-1, 1:t+1]-val_eval_lookahead_4_5[t-1, :t])-np.diff(val_deterministic[t-1, :t+1], n=1)) 
-
-        #test_differences_1 = .25*(np.diff(val_deterministic[t, :t+1], n=1)-(val_eval_lookahead_4_5[t, 1:t+1]+val_eval_lookahead_4_5[t, :t]-val_lookahead_4_5[t, 1:t+1]-val_lookahead_4_5[t, :t]))-.6
-        
+        #test_differences_1 = .25*(np.diff(val_deterministic[t, :t+1], n=1)-(val_eval_lookahead_4_5[t, 1:t+1]+val_eval_lookahead_4_5[t, :t]-val_lookahead_4_5[t, 1:t+1]-val_lookahead_4_5[t, :t]))-.6        
         if t>3:
             for indx, treshold in enumerate(cumsum[:-1]):
                 test_differences[t] = test_differences_1
                 test_differences[t][int(np.floor(treshold)):int(np.ceil(cumsum[indx+1]))] = test_differences_2[int(np.floor(treshold)):int(np.ceil(cumsum[indx+1]))]
                 test_differences[t][int(np.floor(treshold-.25*window)):int(np.ceil(treshold+.25*window)+1)] = 0
             #test_differences[t][:int(np.floor(.5*.25*window))] = 0
-            #test_differences[t][:int(np.floor(cumsum[0]-.25*window))] = 0
-            test_differences[t][int(np.floor(cumsum[-2]+.25*window)):] = 0
-            test_delta[t] = test_differences[t].max()#np.absolute(test_differences[t]).max() 
-    test_bound_2[horizon] = test_delta.sum()
+            test_differences[t][:int(np.floor(cumsum[0]-.25*window))] = 0
+            #test_differences[t][int(np.floor(cumsum[-2]+.25*window)):] = 0
+            test_delta[t] = test_differences[t].max()
+    test_bound[horizon] = test_delta.sum()
+
+test_bound_4_5 = {}
+for horizon in horizons:
+    test_delta = np.zeros(horizon+1)
+    test_differences = {}
+    for t in range(10,horizon+1):
+        window = int(np.floor(t**(window_size)))+1
+        restriction = np.multiply(probabilities[::-1], t)
+        cumsum = np.cumsum(restriction)
+        compensations = np.zeros(t+1)
+        for x in range(1,t+1):
+            compensations[x] = deviation_compensation(t, x, sol_lookahead_bounds, probabilities, rewards, val_lookahead_bounds)
+        test_differences[t] = compensations
+        #for indx, treshold in enumerate(cumsum[:-1]):
+        #    test_differences[t][int(np.ceil(treshold-.25*window))+1:int(np.floor(treshold+.25*window))] = 0
+        #test_differences[t][int(np.floor(cumsum[-2]+.25*window)):] = 0
+        #test_differences[t][:int(np.floor(cumsum[0]-.25*window))] = 0
+        test_delta[t] = test_differences[t][1:-1].max() 
+    test_bound_4_5[horizon] = test_delta.sum()
+
+test_bound[0] = 0 
+test_bound_3[0] = 0 
+test_bound_4_5[0] = 0
+
+#####################################################################
+#batched lookahead bounds
+sub_opt_gap = {}
+test_bound_optimal_batched = {}
+
+for horizon in horizons:
+    sub_opt_gap[horizon] = np.max(val_dynamic[horizon, :horizon+1]-val_eval_lookahead[horizon][horizon, :horizon+1])
+    
+    test_delta = np.zeros(horizon+1)
+    test_differences = {}
+    for t in range(3,horizon+1):
+        window = int(np.ceil(t**(window_size)))+1
+        restriction = np.multiply(probabilities[::-1], t)
+        cumsum = np.cumsum(restriction)
+        test_differences[t] = .25*(np.diff(val_deterministic[t, :t+1], n=1)-np.diff(val_dynamic[t, :t+1], n=1))
+        for indx, treshold in enumerate(cumsum[:-1]):
+            test_differences[t][int(np.floor(treshold-.25*window)):int(np.ceil(treshold+.25*window))+1] = 0
+        test_delta[t] = np.absolute(test_differences[t]).max()
+    test_bound_optimal_batched[horizon] = test_delta.sum()
+
+test_bound_4_5_batched = {}
+deltas = {}
+for horizon in horizons:
+    test_delta = np.zeros((horizon+1,horizon+1))
+    delta_use = np.zeros(horizon+1)
+    for t in range(10,horizon+1):
+        for x in range(1, t+1):
+            test_delta[t, x] = deviation_compensation(t, x, sol_lookahead[horizon], probabilities, rewards, val_lookahead[horizon])
+        delta_use[t] = test_delta[t].max() 
+    test_bound_4_5_batched[horizon] = delta_use.sum()
+    deltas[horizon] = test_delta
+
+
 
 #####################################################################
 ##### Revision plots
@@ -244,10 +357,10 @@ plt.show()
 plt.plot(np.maximum(np.diff(val_dynamic[100][:100+1], n=1)-np.diff(val_eval_lookahead_4_5[100][:100+1], n=1), 0))
 plt.show()
 
-#plt.plot(val_dynamic[t][:t+1], label= 'DP')
-#plt.plot(val_dynamic[t+1][:t+1], label = 'DP2')
-plt.plot(val_eval_lookahead_4_5[t][:t+10], label = 'Lookahead')
-plt.plot(val_eval_lookahead_4_5[t+1][:t+10], label = 'Lookahead2')
+t=100
+plt.plot(val_dynamic[t,:t+1], label= 'DP')
+plt.plot(val_lookahead[t][t, :t+1], label = 'Approx')
+plt.plot(val_eval_lookahead[t][t,:t+1], label = 'Lookahead')
 plt.legend()
 plt.show()
 
@@ -272,7 +385,7 @@ plt.show()
 ########################################################################
 cmap_dict = {0: 'tab:blue', 1: 'lavender', 2: 'tab:orange', 3: 'tab:grey', 4: 'tab:red'}
 cmap = ListedColormap([cmap_dict[i] for i in range(5)])
-df = pd.DataFrame(sol_index_lookahead_4_5[:100, :100+1])
+df = pd.DataFrame(sol_index_lookahead[100][:100, :100+1])
 df_reversed_cols = df.iloc[:, ::-1]
 plt.figure(figsize=(16,10), dpi= 80)
 sns.heatmap(df_reversed_cols, cmap=cmap, cbar=False, annot=False, linewidths=0.5, alpha=0.6)
@@ -286,15 +399,15 @@ patch_3 = mpatches.Patch(color='tab:grey', label='3 Highest Types')
 patch_4 = mpatches.Patch(color='tab:red', label='All Types')
 plt.legend(handles=[patch_0, patch_1, patch_2, patch_3, patch_4], loc='upper left', bbox_to_anchor=(1.12, 1))
 plt.show()
-plt.savefig(path_0+'action_map_2_3.png')
+#plt.savefig(path_0+'action_map_2_3.png')
 
 
 ########################################################################
 ## Bounds with the optimal value function first order difference and increasing lookahead 
 ########################################################################
 plt.figure(figsize=(16,10), dpi= 80)
-fraction_str = ['2/3', '7/10', '3/4', '4/5', '5/6']
-fractions = [2/3, 7/10, 3/4, 4/5, 5/6]
+fraction_str = ['2/3', '4/5']
+fractions = [2/3, 4/5]
 plt.figure(figsize=(16,10), dpi= 80)
 for indx_frac, frac in enumerate(fractions):
     for horizon in horizons:
@@ -327,6 +440,38 @@ plt.gca().spines["left"].set_alpha(0.3)
 plt.show()
 plt.close()
 
+
+########################################################################
+## Bounds on regret for the batched lookahead
+########################################################################
+plt.figure(figsize=(16,10), dpi= 80)
+sorted_data = dict(sorted(sub_opt_gap.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='tab:red', marker='x', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red', label = 'Regret')
+#sorted_data = dict(sorted(test_bound_optimal_batched.items()))
+#x = list(sorted_data.keys())
+#y = list(sorted_data.values())
+#plt.plot(x, y, color='black', marker='', markersize=5, 
+#        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='black', label = 'Using Optimal function bound')
+sorted_data = dict(sorted(test_bound_4_5_batched.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='black', marker='x', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='black', label = 'Optimality test bound')
+plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+plt.yticks(fontsize=12, alpha=.7)
+plt.grid(axis='both', alpha=.3)
+plt.xlabel('Horizon', fontsize = 14)
+plt.legend()
+plt.gca().spines["top"].set_alpha(0.3)    
+plt.gca().spines["bottom"].set_alpha(0.3)
+plt.gca().spines["right"].set_alpha(0.3)    
+plt.gca().spines["left"].set_alpha(0.3)
+plt.show()
+
+
 ########################################################################
 ## Bounds on regret
 ########################################################################
@@ -338,20 +483,76 @@ sorted_data = dict(sorted(sub_opt_gap.items()))
 x = list(sorted_data.keys())
 y = list(sorted_data.values())
 plt.plot(x, y, color='tab:red', marker='o', markersize=5, 
-        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red', label = 'Regret')
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red', label = 'Regret >')
 sorted_data = dict(sorted(test_bound_3.items()))
 x = list(sorted_data.keys())
 y = list(sorted_data.values())
 plt.plot(x, y, color='black', marker='', markersize=5, 
         markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='black', label = 'Sum of max |Deltas| on ND (Optimal)')
-sorted_data = dict(sorted(test_bound_2.items()))
+sorted_data = dict(sorted(test_bound.items()))
 x = list(sorted_data.keys())
 y = list(sorted_data.values())
-plt.plot(x, y, color='tab:orange', marker='x', markersize=5, 
-        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:orange', label = 'Bound')
+plt.plot(x, y, color='tab:orange', marker='o', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:orange', label = 'Bound >')
 plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
 plt.yticks(fontsize=12, alpha=.7)
 plt.title('Regret for $t^{4/5}$ Lookahead Policy', fontsize=20)
+plt.grid(axis='both', alpha=.3)
+plt.xlabel('Horizon', fontsize = 14)
+plt.legend()
+plt.gca().spines["top"].set_alpha(0.3)    
+plt.gca().spines["bottom"].set_alpha(0.3)
+plt.gca().spines["right"].set_alpha(0.3)    
+plt.gca().spines["left"].set_alpha(0.3)
+plt.show()
+
+
+plt.figure(figsize=(16,10), dpi= 80)
+sorted_data = dict(sorted(sub_opt_gap.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='tab:red', marker='x', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:red', label = 'Regret')
+#sorted_data = dict(sorted(test_bound_3.items()))
+#x = list(sorted_data.keys())
+#y = list(sorted_data.values())
+#plt.plot(x, y, color='black', marker='', markersize=5, 
+#        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='black', label = 'Using Optimal function bound')
+sorted_data = dict(sorted(test_bound_4_5.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='tab:green', marker='x', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:green', label = 'Optimality test bound')
+plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+plt.yticks(fontsize=12, alpha=.7)
+#plt.title('Regret for $t^{4/5}$ Lookahead Policy', fontsize=20)
+plt.grid(axis='both', alpha=.3)
+plt.xlabel('Horizon', fontsize = 14)
+plt.legend()
+plt.gca().spines["top"].set_alpha(0.3)    
+plt.gca().spines["bottom"].set_alpha(0.3)
+plt.gca().spines["right"].set_alpha(0.3)    
+plt.gca().spines["left"].set_alpha(0.3)
+plt.show()
+
+plt.figure(figsize=(16,10), dpi= 80)
+sorted_data = dict(sorted(test_bound_2_3.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='tab:blue', marker='x', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:blue', label = 'Optimality test bound 2/3')
+sorted_data = dict(sorted(test_bound_4_5.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='tab:green', marker='o', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:green', label = 'Optimality test bound 4/5 Conservative')
+sorted_data = dict(sorted(test_bound_4_5_2.items()))
+x = list(sorted_data.keys())
+y = list(sorted_data.values())
+plt.plot(x, y, color='tab:green', marker='+', markersize=5, 
+        markerfacecolor='None', markerfacecoloralt='None', markeredgecolor='tab:green', label = 'Optimality test bound 4/5 Agressive')
+plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+plt.yticks(fontsize=12, alpha=.7)
 plt.grid(axis='both', alpha=.3)
 plt.xlabel('Horizon', fontsize = 14)
 plt.legend()
