@@ -37,21 +37,156 @@ result_lookahead = {}
 val_lookahead = {}
 sol_lookahead = {}
 sol_index_lookahead = {}
+val_next_lookahead = {}
 result_eval_lookahead = {}
 val_eval_lookahead = {}
 
-result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_solution(T, capacity, probabilities, rewards, vectors)
+result_dynamic, val_dynamic, sol_dynamic, sol_index_dynamic = ms.dynamic_msecretary(T, capacity, probabilities, rewards, vectors)
 val_deterministic = ms.deterministic_msecretary_array(T, capacity, probabilities, rewards, n_types)
-values_offline = ms.simulate_offline_msecretary(T, [capacity], probabilities, rewards, n_types, n_sims, seed = 42)
-val_offline = values_offline[100].mean(axis = 0)
+#values_offline = ms.simulate_offline_msecretary(T, [capacity], probabilities, rewards, n_types, n_sims, seed = 42)
+#val_offline = values_offline[100].mean(axis = 0)
 
 for window in tqdm(windows):
-    result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window] = ms.approx_n_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors)
+    result_lookahead[window], val_lookahead[window], sol_lookahead[window], sol_index_lookahead[window], val_next_lookahead[window] = ms.dynamic_msecretary_lookahead(T, capacity, val_deterministic, window, probabilities, rewards, vectors)
     result_eval_lookahead[window], val_eval_lookahead[window] = ms.evaluate_solution(T, capacity, sol_index_lookahead[window], prob_choice, rewards)
     suboptimality_gap[window] = val_dynamic-val_eval_lookahead[window]#, val_dynamic, out=np.zeros_like(val_dynamic), where=val_dynamic != 0)
     max_suboptimality_gap[window] = np.max(suboptimality_gap[window][T])
     max_suboptimality_gap_t[window] = np.max(suboptimality_gap[window])
     which_t_max[window], which_x_max[window] = np.unravel_index(np.argmax(suboptimality_gap[window]), suboptimality_gap[window].shape)
+
+#########################################################################################################################
+#########################################################################################################################
+#########################################################################################################################
+#Value functions
+path = path_0 + 'value_functions/LP_Optimal'
+if not os.path.exists(path):
+    os.makedirs(path)
+
+t_periods = [i for i in np.arange(T, T+5, 5)]
+
+for dix, fix_t in enumerate(t_periods):
+    plt.figure(figsize=(16,10), dpi= 80)
+    plt.plot(val_dynamic[fix_t], color = 'tab:grey', label='Optimal value function', linestyle = '-')
+    plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
+    plt.plot(val_offline, color = 'tab:blue', label='Offline value function', linestyle = 'dashdot', marker = '', fillstyle = 'none')
+    
+    # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('x (capacity)', fontsize = 14)
+    
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)   
+    plt.legend(loc = "lower right")
+    plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
+    plt.savefig(path+'/value_functions_'+str(fix_t)+'.pdf')
+    plt.close()
+
+for dix, fix_t in enumerate(t_periods):
+    plt.figure(figsize=(16,10), dpi= 80)
+    plt.plot(val_deterministic[fix_t]-val_dynamic[fix_t], color = 'tab:red', label='Difference LP-DP', marker='+')
+    plt.plot(val_offline-val_dynamic[fix_t], color = 'tab:blue', label='Difference Offline-DP', marker='o', fillstyle = 'none')
+    
+    # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Difference in Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('x (capacity)', fontsize = 14)
+    
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)   
+    plt.legend(loc = "lower right")
+    plt.savefig(path+'/diff_value_functions_'+str(fix_t)+'.png')
+    plt.savefig(path+'/diff_value_functions_'+str(fix_t)+'.pdf')
+    plt.close()
+
+
+path = path_0 + 'value_functions/100_lookahead'
+step = 100
+if not os.path.exists(path):
+    os.makedirs(path)
+
+t_periods = [i for i in np.arange(T, T+5, 5)]
+
+for dix, fix_t in enumerate(t_periods):
+    plt.figure(figsize=(16,10), dpi= 80)
+    plt.plot(np.diff(val_dynamic[fix_t-1][:-1], n=1), color = 'tab:red', label='Next Step First Order Difference DP', marker='+')
+    plt.plot(np.diff(val_next_lookahead[step][fix_t][:-1], n = 1), color = 'tab:blue', label='Next Step First Order Difference Lookahead DP', marker='o', fillstyle = 'none')
+     
+    # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Difference in Value function "$V_{t-1}(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('x (capacity)', fontsize = 14)
+    
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)   
+    plt.legend(loc = "upper right")
+    plt.savefig(path+'/diff/diff_next_value_functions_'+str(fix_t)+'.png')
+    plt.close()
+
+for dix, fix_t in enumerate(t_periods):
+    plt.figure(figsize=(16,10), dpi= 80)
+    plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal Value Function', linestyle = '-')
+    plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
+    plt.plot(val_lookahead[step][fix_t], color = 'tab:blue', label='Lookahead DP', linestyle = 'dashdot', marker = '', fillstyle = 'none')
+    plt.plot(val_eval_lookahead[step][fix_t], color = 'tab:green', label='Lookahead Heuristic', linestyle = 'dotted', marker = '', fillstyle = 'none')
+    plt.plot(val_offline, color = 'tab:orange', label='Offline value function', linestyle = '--', marker = '', fillstyle = 'none')
+    
+    # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('x (capacity)', fontsize = 14)
+    
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)   
+    plt.legend(loc = "lower right")
+    plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
+    plt.close()
+    
+for dix, fix_t in enumerate(t_periods):
+    plt.figure(figsize=(16,10), dpi= 80)
+    plt.plot(val_deterministic[fix_t]-val_dynamic[fix_t], color = 'tab:red', label='Difference LP-DP', marker='+')
+    plt.plot(val_lookahead[step][fix_t]-val_dynamic[fix_t], color = 'tab:blue', label='Difference Lookahead DP-DP', marker='o', fillstyle = 'none')
+    plt.plot(val_offline-val_eval_lookahead[step][fix_t], color = 'tab:orange', label='Difference Offline-Heuristic', marker='x', fillstyle = 'none')
+    plt.plot(val_offline-val_dynamic[fix_t], color = 'black', label='Difference Offline-DP', marker='', fillstyle = 'none')
+    plt.plot(val_dynamic[fix_t]-val_eval_lookahead[step][fix_t], color = 'tab:gray', label='Difference DP-Heuristic', marker=',', fillstyle = 'none')
+    
+    # Decoration
+    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+    plt.yticks(fontsize=12, alpha=.7)
+    plt.title('Difference in Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
+    plt.grid(axis='both', alpha=.3)
+    plt.xlabel('x (capacity)', fontsize = 14)
+    
+    # Remove borders
+    plt.gca().spines["top"].set_alpha(0.3)    
+    plt.gca().spines["bottom"].set_alpha(0.3)
+    plt.gca().spines["right"].set_alpha(0.3)    
+    plt.gca().spines["left"].set_alpha(0.3)   
+    plt.legend(loc = "lower right")
+    plt.savefig(path+'/diff/diff_value_functions_'+str(fix_t)+'.png')
+    plt.close()
+
+
 
 #########################################################################################################################
 #########################################################################################################################
@@ -109,116 +244,6 @@ plt.gca().spines["left"].set_alpha(0.3)
 
 plt.savefig(path+'/maximum_sub_gap.pdf')
 plt.close()
-#########################################################################################################################
-#########################################################################################################################
-#########################################################################################################################
-#Value functions
-path = path_0 + 'value_functions/LP_Optimal'
-if not os.path.exists(path):
-    os.makedirs(path)
-
-t_periods = [i for i in np.arange(T, T+5, 5)]
-
-for dix, fix_t in enumerate(t_periods):
-    plt.figure(figsize=(16,10), dpi= 80)
-    plt.plot(val_dynamic[fix_t], color = 'tab:grey', label='Optimal value function', linestyle = '-')
-    plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
-    plt.plot(val_offline, color = 'tab:blue', label='Offline value function', linestyle = 'dashdot', marker = '', fillstyle = 'none')
-    
-    # Decoration
-    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-    plt.yticks(fontsize=12, alpha=.7)
-    plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
-    plt.grid(axis='both', alpha=.3)
-    plt.xlabel('x (capacity)', fontsize = 14)
-    
-    # Remove borders
-    plt.gca().spines["top"].set_alpha(0.3)    
-    plt.gca().spines["bottom"].set_alpha(0.3)
-    plt.gca().spines["right"].set_alpha(0.3)    
-    plt.gca().spines["left"].set_alpha(0.3)   
-    plt.legend(loc = "lower right")
-    plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
-    plt.savefig(path+'/value_functions_'+str(fix_t)+'.pdf')
-    plt.close()
-
-for dix, fix_t in enumerate(t_periods):
-    plt.figure(figsize=(16,10), dpi= 80)
-    plt.plot(val_deterministic[fix_t]-val_dynamic[fix_t], color = 'tab:red', label='Difference LP-DP', marker='+')
-    plt.plot(val_offline-val_dynamic[fix_t], color = 'tab:blue', label='Difference Offline-DP', marker='o', fillstyle = 'none')
-    
-    # Decoration
-    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-    plt.yticks(fontsize=12, alpha=.7)
-    plt.title('Difference in Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
-    plt.grid(axis='both', alpha=.3)
-    plt.xlabel('x (capacity)', fontsize = 14)
-    
-    # Remove borders
-    plt.gca().spines["top"].set_alpha(0.3)    
-    plt.gca().spines["bottom"].set_alpha(0.3)
-    plt.gca().spines["right"].set_alpha(0.3)    
-    plt.gca().spines["left"].set_alpha(0.3)   
-    plt.legend(loc = "lower right")
-    plt.savefig(path+'/diff_value_functions_'+str(fix_t)+'.png')
-    plt.savefig(path+'/diff_value_functions_'+str(fix_t)+'.pdf')
-    plt.close()
-
-
-path = path_0 + 'value_functions/25_lookahead'
-step = 25
-if not os.path.exists(path):
-    os.makedirs(path)
-
-t_periods = [i for i in np.arange(T, T+5, 5)]
-
-for dix, fix_t in enumerate(t_periods):
-    plt.figure(figsize=(16,10), dpi= 80)
-    plt.plot(val_dynamic[fix_t], color = 'black', label='Optimal Value Function', linestyle = '-')
-    plt.plot(val_deterministic[fix_t], color = 'tab:red', label='LP Upper Bound')
-    plt.plot(val_lookahead[step][fix_t], color = 'tab:blue', label='Lookahead DP', linestyle = 'dashdot', marker = '', fillstyle = 'none')
-    plt.plot(val_eval_lookahead[step][fix_t], color = 'tab:green', label='Lookahead Heuristic', linestyle = 'dotted', marker = '', fillstyle = 'none')
-    plt.plot(val_offline, color = 'tab:orange', label='Offline value function', linestyle = '--', marker = '', fillstyle = 'none')
-    
-    # Decoration
-    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-    plt.yticks(fontsize=12, alpha=.7)
-    plt.title('Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
-    plt.grid(axis='both', alpha=.3)
-    plt.xlabel('x (capacity)', fontsize = 14)
-    
-    # Remove borders
-    plt.gca().spines["top"].set_alpha(0.3)    
-    plt.gca().spines["bottom"].set_alpha(0.3)
-    plt.gca().spines["right"].set_alpha(0.3)    
-    plt.gca().spines["left"].set_alpha(0.3)   
-    plt.legend(loc = "lower right")
-    plt.savefig(path+'/value_functions_'+str(fix_t)+'.png')
-    plt.close()
-    
-for dix, fix_t in enumerate(t_periods):
-    plt.figure(figsize=(16,10), dpi= 80)
-    plt.plot(val_deterministic[fix_t]-val_dynamic[fix_t], color = 'tab:red', label='Difference LP-DP', marker='+')
-    plt.plot(val_lookahead[step][fix_t]-val_dynamic[fix_t], color = 'tab:blue', label='Difference Lookahead DP-DP', marker='o', fillstyle = 'none')
-    plt.plot(val_offline-val_eval_lookahead[step][fix_t], color = 'tab:orange', label='Difference Offline-Heuristic', marker='x', fillstyle = 'none')
-    plt.plot(val_offline-val_dynamic[fix_t], color = 'black', label='Difference Offline-DP', marker='', fillstyle = 'none')
-    plt.plot(val_dynamic[fix_t]-val_eval_lookahead[step][fix_t], color = 'tab:gray', label='Difference DP-Heuristic', marker=',', fillstyle = 'none')
-    
-    # Decoration
-    plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-    plt.yticks(fontsize=12, alpha=.7)
-    plt.title('Difference in Value function "$V_t(x)$" of multi-secretary problem with ' + str(n_types) +' types for remaining periods t = '+str(fix_t), fontsize=20)
-    plt.grid(axis='both', alpha=.3)
-    plt.xlabel('x (capacity)', fontsize = 14)
-    
-    # Remove borders
-    plt.gca().spines["top"].set_alpha(0.3)    
-    plt.gca().spines["bottom"].set_alpha(0.3)
-    plt.gca().spines["right"].set_alpha(0.3)    
-    plt.gca().spines["left"].set_alpha(0.3)   
-    plt.legend(loc = "lower right")
-    plt.savefig(path+'/diff/diff_value_functions_'+str(fix_t)+'.png')
-    plt.close()
 
 
 ############################################################################################################
