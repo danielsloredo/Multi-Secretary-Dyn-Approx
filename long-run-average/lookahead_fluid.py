@@ -153,6 +153,7 @@ def fluid_array(T, N, lam_values, upper_bound_capacity):
     return val_deterministic, solution_deterministic, states_deterministic
 
 
+
 if __name__ == "__main__":
     T = 2000
     N = 1
