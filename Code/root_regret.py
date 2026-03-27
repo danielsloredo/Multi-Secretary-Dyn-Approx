@@ -77,7 +77,6 @@ with open(path_data+'val_eval_lookahead_batched.pkl', 'rb') as pickle_file:
 with open(path_data+'val_lookahead.pkl', 'rb') as pickle_file:
     val_lookahead = pickle.load(pickle_file)
 with open(path_data+'sol_lookahead.pkl', 'rb') as pickle_file:
-
     sol_lookahead = pickle.load(pickle_file)
 with open(path_data+'sol_index_lookahead.pkl', 'rb') as pickle_file:
     sol_index_lookahead = pickle.load(pickle_file)

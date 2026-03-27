@@ -143,22 +143,62 @@ with open('C:/Users/danie/Documents/Multi-Secretary-Dyn-Approx/Data/uniform_type
 ##########################################################
 #Difference between lookaheads growth
 #########################################################
-diff_fluid_optimal = np.zeros((T+1))
-diff_fluid_1 = np.zeros((T+1))
-diff_1_2 = np.zeros((T+1))
-diff_1_10 = np.zeros((T+1))
-diff_1_log = np.zeros((T+1))
+#diff_fluid_optimal = np.zeros((T+1))
+#diff_fluid_1 = np.zeros((T+1))
+#diff_1_2 = np.zeros((T+1))
+#diff_1_10 = np.zeros((T+1))
+#diff_1_log = np.zeros((T+1))
 treshold_diff_fluid_1 = np.zeros((T+1))
+treshold_diff_1_optimal = np.zeros((T+1))
+treshold_diff_2_optimal = np.zeros((T+1))
+treshold_diff_log_optimal = np.zeros((T+1))
+treshold_diff_sqrt_optimal = np.zeros((T+1))
+treshold_diff_23_optimal = np.zeros((T+1))
 treshold_diff_1_2 = np.zeros((T+1))
+treshold_diff_1_sqrt = np.zeros((T+1))
+treshold_diff_1_23 = np.zeros((T+1))
 
 for t in np.arange(2, T):
-    diff_fluid_optimal[t] =np.max(val_deterministic[t] - val_dynamic[t])
-    diff_fluid_1[t] = np.max(val_deterministic[t] - val_lookahead_dic[2][t])*t
-    diff_1_2[t] = np.max(val_lookahead_dic[1][t] - val_lookahead_dic[2][t])*t
-    diff_1_10[t] = np.max(val_lookahead_dic[1][t] - val_lookahead_dic[10][t])*t
-    diff_1_log[t] = np.max(val_lookahead_dic[1][t] - val_lookahead_dic['log'][t])*t
-    treshold_diff_fluid_1[t] = np.max(sol_deterministic[t] - sol_lookahead_dic[2][t])*t
-    treshold_diff_1_2[t] = np.max(sol_lookahead_dic[1][t] - sol_lookahead_dic[2][t])*t
+    #diff_fluid_optimal[t] =np.max(val_deterministic[t] - val_dynamic[t])
+    #diff_fluid_1[t] = np.max(val_deterministic[t] - val_lookahead_dic[2][t])*t
+    #diff_1_2[t] = np.max(val_lookahead_dic[1][t] - val_lookahead_dic[2][t])*t
+    #diff_1_10[t] = np.max(val_lookahead_dic[1][t] - val_lookahead_dic[10][t])*t
+    #diff_1_log[t] = np.max(val_lookahead_dic[1][t] - val_lookahead_dic['log'][t])*t
+    treshold_diff_fluid_1[t] = np.max(np.abs(sol_deterministic[t] - sol_lookahead_dic[1][t]))*(t**2)
+    treshold_diff_1_optimal[t] = np.max(np.abs(sol_dynamic[t] - sol_lookahead_dic[1][t]))*(t**(.75))
+    treshold_diff_2_optimal[t] = np.max(np.abs(sol_dynamic[t] - sol_lookahead_dic[2][t]))*(t**2)
+    treshold_diff_log_optimal[t] = np.max(np.abs(sol_dynamic[t] - sol_lookahead_dic['log'][t]))*(t**2)
+    treshold_diff_sqrt_optimal[t] = np.max(np.abs(sol_dynamic[t] - sol_lookahead_dic[0.5][t]))*(t**2)
+    treshold_diff_1_2[t] = np.max(np.abs(sol_lookahead_dic[1][t] - sol_lookahead_dic[2][t]))*(t**2)
+    treshold_diff_1_sqrt[t] = np.max(np.abs(sol_lookahead_dic[1][t] - sol_lookahead_dic[0.5][t]))*(t**2)
+    treshold_diff_1_23[t] = np.max(np.abs(sol_lookahead_dic[1][t] - sol_lookahead_dic[2/3][t]))*(t**2)
+    treshold_diff_23_optimal[t] = np.max(np.abs(sol_lookahead_dic[2/3][t] - sol_dynamic[t]))*(t**2)
+
+
+line_styles = itertools.cycle(['-', '--', '-.', ':'])
+colors = itertools.cycle(['black', 'red', 'blue'])
+plt.figure(figsize=(16,10), dpi= 80)
+#plt.plot(treshold_diff_fluid_1[:-1], label = '(Fluid - 1-Lookahead)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+plt.plot(treshold_diff_1_optimal[:-1], label = '(1-lookahead - Optimal)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_2_optimal[:-1], label = '(2-lookahead - Optimal)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_log_optimal[:-1], label = '(log-lookahead - Optimal)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_sqrt_optimal[:-1], label = '(sqrt-lookahead - Optimal)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_1_2[:-1], label = '(1-lookahead - 2-lookahead)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_1_sqrt[:-1], label = '(1-lookahead - sqrt-lookahead)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_1_23[:-1], label = '(1-lookahead - 2/3-lookahead)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(treshold_diff_23_optimal[:-1], label = '(2/3-lookahead - Optimal)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+plt.title('Difference tresholds*t')
+plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
+plt.yticks(fontsize=12, alpha=.7)
+plt.grid(axis='both', alpha=.3)
+plt.xlabel('T ', fontsize = 14)
+plt.gca().spines["top"].set_alpha(0.3)    
+plt.gca().spines["bottom"].set_alpha(0.3)
+plt.gca().spines["right"].set_alpha(0.3)    
+plt.gca().spines["left"].set_alpha(0.3)   
+plt.legend(loc = "upper right")
+plt.show()
+
 
 line_styles = itertools.cycle(['-', '--', '-.', ':'])
 colors = itertools.cycle(['black', 'red', 'blue'])
@@ -178,23 +218,6 @@ plt.gca().spines["left"].set_alpha(0.3)
 plt.legend(loc = "upper right")
 plt.show()
 
-line_styles = itertools.cycle(['-', '--', '-.', ':'])
-colors = itertools.cycle(['black', 'red', 'blue'])
-plt.figure(figsize=(16,10), dpi= 80)
-#plt.plot(diff_fluid_optimal[:-1])
-plt.plot(treshold_diff_fluid_1[:-1], label = '(Fluid - 1-Lookahead)/(1/t)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
-plt.plot(treshold_diff_1_2[:-1], label = '(1-lookahead - 2-lookahead)/(1/t^2)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
-plt.title('Difference tresholds/(corresponding rate)')
-plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
-plt.yticks(fontsize=12, alpha=.7)
-plt.grid(axis='both', alpha=.3)
-plt.xlabel('T ', fontsize = 14)
-plt.gca().spines["top"].set_alpha(0.3)    
-plt.gca().spines["bottom"].set_alpha(0.3)
-plt.gca().spines["right"].set_alpha(0.3)    
-plt.gca().spines["left"].set_alpha(0.3)   
-plt.legend(loc = "upper right")
-plt.show()
 
 line_styles = itertools.cycle(['-', '--', '-.', ':'])
 colors = itertools.cycle(['black', 'red', 'blue'])
@@ -226,6 +249,7 @@ capacity=200
 np.random.seed(101)
 policy_optimal = np.zeros((T))
 policy_lookahead = np.zeros((T))
+policy_lookahead_2 = np.zeros((T))
 policy_log_lookahead = np.zeros((T))
 policy_fluid = np.zeros((T))
 x = np.zeros((T+1, 4))
@@ -235,6 +259,7 @@ for ell in np.arange(0, T):
     t = T-ell
     policy_optimal[ell] = sol_dynamic[t, int(x[ell,0])]
     policy_lookahead[ell] = sol_lookahead_dic[1][t, int(x[ell,1])]
+    policy_lookahead_2[ell] = sol_lookahead_dic[2][t, int(x[ell,2])]
     policy_log_lookahead[ell] = sol_lookahead_dic['log'][t, int(x[ell,2])]
     policy_fluid[ell] = 1-x[ell,3]/(t)
     if arrival_types[ell] >= policy_optimal[ell]:
@@ -245,6 +270,10 @@ for ell in np.arange(0, T):
         x[ell+1,1] = x[ell,1]-1
     else:
         x[ell+1,1] = x[ell,1]
+    if arrival_types[ell] >= policy_lookahead_2[ell]:
+        x[ell+1,2] = x[ell,2]-1
+    else:
+        x[ell+1,2] = x[ell,2]
     if arrival_types[ell] >= policy_log_lookahead[ell]:
         x[ell+1,2] = x[ell,2]-1
     else:
@@ -258,6 +287,7 @@ for ell in np.arange(0, T):
 plt.figure(figsize=(16,10), dpi= 80)
 plt.plot(policy_optimal[1:-1], label = 'Optimal', linestyle = '-', color = 'black', alpha = 0.8)
 plt.plot(policy_lookahead[1:-1], label = '1-lookahead', linestyle = '-', color = 'red', alpha = 0.8)
+#plt.plot(policy_lookahead_2[1:], label = '2-lookahead', linestyle = '-.', color = 'blue', alpha = 0.8)
 #plt.plot(policy_log_lookahead[1:], label = 'log-lookahead', linestyle = '-.', color = 'black', alpha = 0.8)
 #plt.plot(policy_fluid[1:-1], label = 'Fluid', linestyle = ':', color = 'tab:red', alpha = 0.8)
 plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
@@ -290,7 +320,7 @@ plt.show()
 ##########################################
 # Plotting
 ##########################################
-windows = [1, 2, 'log', 0.5, 2/3]
+windows = [1, 2, 10, 'log', 0.5, 2/3]
 sub_opt_gap = {window_size: np.zeros((T+1)) for window_size in windows}
 sub_opt_gap_ft = {window_size: np.zeros((T+1)) for window_size in windows}
 worst_state_gap = {window_size: np.zeros((T+1)) for window_size in windows}
@@ -301,7 +331,7 @@ worst_state = np.zeros((T+1))
 for t in range(2,T+1):
     for index, window_size in enumerate(windows):
         sub_opt_gap[window_size][t] = np.max(val_dynamic[t,:]-val_eval_lookahead_dic[window_size][t, :])
-        sub_opt_gap_ft[window_size][t] = np.max(val_dynamic[t,:]-val_eval_lookahead_dic[window_size][t, :])/np.log(t)
+        sub_opt_gap_ft[window_size][t] = np.max(val_dynamic[t,:]-val_eval_lookahead_dic[window_size][t, :])/(np.log(t))
         worst_state_gap[window_size][t] = np.argmax(val_dynamic[t,:]-val_eval_lookahead_dic[window_size][t, :])
     fluid_opt_gap[t] = np.max(val_deterministic[t,:]-val_dynamic[t,:]) 
     fluid_opt_gap_ft[t] = np.max(val_deterministic[t,:]-val_dynamic[t,:])/np.log(t)
@@ -316,7 +346,7 @@ line_styles = itertools.cycle(['-', '--', '-.', ':'])
 colors = itertools.cycle(['black', 'red', 'blue'])
 plt.figure(figsize=(16,10), dpi= 80)
 plt.plot(sub_opt_gap_ft[1][11:], label = '1-lookahead Gap/log(t)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
-plt.plot(fluid_opt_gap_ft[11:], label = 'Fluid vs Optimal/log(t)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
+#plt.plot(fluid_opt_gap_ft[11:], label = 'Fluid vs Optimal/log(t)', linestyle = next(line_styles), color = 'black', alpha = 0.8)
 plt.title('Growth comparision')
 plt.xticks(rotation=0, fontsize=12, horizontalalignment='center', alpha=.7)
 plt.yticks(fontsize=12, alpha=.7)
